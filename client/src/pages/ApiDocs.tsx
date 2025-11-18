@@ -87,8 +87,54 @@ export default function ApiDocs() {
   "balance": 250,
   "currency": "credits"
 }`
+    },
+    {
+      method: "GET" as const,
+      path: "/api/v2/sms/inbox",
+      title: "Get incoming messages (2-Way SMS)",
+      description: "Retrieve incoming SMS messages sent to your assigned phone number. Requires phone number assignment by admin.",
+      requestExample: `curl -X GET http://151.243.109.79/api/v2/sms/inbox?limit=50 \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
+      responseExample: `{
+  "success": true,
+  "messages": [
+    {
+      "id": "abc123",
+      "from": "+1234567890",
+      "firstname": "John",
+      "lastname": "Doe",
+      "business": "ABC Company",
+      "message": "Reply to your message",
+      "status": "received",
+      "receiver": "+1987654321",
+      "timestamp": "2025-11-18T10:30:00.000Z",
+      "messageId": "ext_msg_123"
+    }
+  ],
+  "count": 1
+}`
     }
   ];
+
+  const webhookInfo = {
+    title: "Webhook Configuration (2-Way SMS)",
+    description: "Configure this webhook URL in your ExtremeSMS account to receive incoming messages:",
+    webhookUrl: "http://151.243.109.79/webhook/incoming-sms",
+    payloadExample: `{
+  "from": "XXXXXXXXXXX",
+  "firstname": "John",
+  "lastname": "Doe",
+  "business": "ABC Company",
+  "message": "stop sending message",
+  "status": "blocked",
+  "matchedBlockWord": "stop",
+  "receiver": "XXXXXXXXXX",
+  "usedmodem": "XXXX",
+  "port": "XXXX",
+  "timestamp": "2025-09-23T23:23:20.887Z",
+  "messageId": "68d32be5acc9914eed77720d"
+}`
+  };
 
   return (
     <div className="p-6 space-y-8 max-w-5xl">
@@ -121,6 +167,31 @@ export default function ApiDocs() {
         {endpoints.map((endpoint, index) => (
           <ApiEndpointCard key={index} {...endpoint} />
         ))}
+      </div>
+
+      <div className="space-y-6 mt-12">
+        <h2 className="text-2xl font-semibold">2-Way SMS (Webhooks)</h2>
+        <Alert>
+          <Info className="w-4 h-4" />
+          <AlertDescription>
+            <div className="space-y-3">
+              <p><strong>{webhookInfo.title}</strong></p>
+              <p className="text-sm">{webhookInfo.description}</p>
+              <code className="block bg-muted p-3 rounded text-sm font-mono">
+                {webhookInfo.webhookUrl}
+              </code>
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">ExtremeSMS will POST this payload when you receive SMS:</p>
+                <pre className="bg-muted p-3 rounded text-xs font-mono overflow-x-auto">
+                  {webhookInfo.payloadExample}
+                </pre>
+              </div>
+              <p className="text-sm text-muted-foreground mt-3">
+                <strong>Note:</strong> Contact admin to get a phone number assigned to your account. Incoming messages will be routed based on the receiver field.
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   );
