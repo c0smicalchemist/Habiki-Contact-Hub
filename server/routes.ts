@@ -163,10 +163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email, password, name, company } = req.body;
+      const { email, password } = req.body;
 
-      if (!email || !password || !name) {
-        return res.status(400).json({ error: "Email, password, and name are required" });
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
       }
 
       const existingUser = await storage.getUserByEmail(email);
@@ -174,12 +174,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email already registered" });
       }
 
+      // Generate name from email (username part)
+      const name = email.split('@')[0];
+
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await storage.createUser({
         email,
         password: hashedPassword,
         name,
-        company: company || null,
+        company: null,
         role: "client",
         isActive: true
       });

@@ -16,11 +16,8 @@ export default function Signup() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
-    company: "",
-    password: "",
-    confirmPassword: ""
+    password: ""
   });
 
   const signupMutation = useMutation({
@@ -49,14 +46,6 @@ export default function Signup() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive"
-      });
-      return;
-    }
     signupMutation.mutate(formData);
   };
 
@@ -78,19 +67,6 @@ export default function Signup() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">{t('auth.signup.name')}</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  data-testid="input-name"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="email">{t('auth.signup.email')}</Label>
                 <Input
                   id="email"
@@ -104,18 +80,6 @@ export default function Signup() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company">{t('auth.signup.company')}</Label>
-                <Input
-                  id="company"
-                  type="text"
-                  placeholder="Acme Inc"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  data-testid="input-company"
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="password">{t('auth.signup.password')}</Label>
                 <Input
                   id="password"
@@ -123,18 +87,6 @@ export default function Signup() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   data-testid="input-password"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">{t('auth.signup.confirmPassword')}</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  data-testid="input-confirm-password"
                   required
                 />
               </div>
