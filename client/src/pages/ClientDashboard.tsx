@@ -41,7 +41,7 @@ export default function ClientDashboard() {
     }>;
     count: number;
   }>({
-    queryKey: ['/api/v2/sms/inbox'],
+    queryKey: ['/api/client/inbox'],
     refetchInterval: 5000
   });
 

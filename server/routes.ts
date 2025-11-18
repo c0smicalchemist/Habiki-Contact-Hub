@@ -540,6 +540,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get incoming messages for dashboard (JWT auth)
+  app.get("/api/client/inbox", authenticateToken, async (req: any, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const messages = await storage.getIncomingMessagesByUserId(req.user.userId, limit);
+      
+      res.json({
+        success: true,
+        messages: messages.map(msg => ({
+          id: msg.id,
+          from: msg.from,
+          firstname: msg.firstname,
+          lastname: msg.lastname,
+          business: msg.business,
+          message: msg.message,
+          status: msg.status,
+          matchedBlockWord: msg.matchedBlockWord,
+          receiver: msg.receiver,
+          timestamp: msg.timestamp.toISOString(),
+          messageId: msg.messageId
+        })),
+        count: messages.length
+      });
+    } catch (error) {
+      console.error("Client inbox fetch error:", error);
+      res.status(500).json({ error: "Failed to retrieve inbox" });
+    }
+  });
+
   // ============================================
   // Admin Routes
   // ============================================
