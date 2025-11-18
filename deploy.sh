@@ -14,7 +14,7 @@ echo ""
 APP_NAME="ibiki-sms"
 DEPLOY_IN_PLACE="${DEPLOY_IN_PLACE:-true}"  # Deploy from current directory by default
 APP_USER="${APP_USER:-ibiki}"
-APP_PORT="${APP_PORT:-6000}"  # Using 6000 as default port
+APP_PORT="${APP_PORT:-5000}"  # Using 5000 as default port (browser-safe)
 DOMAIN="${DOMAIN:-_}"  # Default to catch-all (IP address access)
 SKIP_NGINX="${SKIP_NGINX:-false}"  # Set to 'true' if you manage Nginx manually
 
