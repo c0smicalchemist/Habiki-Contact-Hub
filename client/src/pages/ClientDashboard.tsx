@@ -3,8 +3,32 @@ import StatCard from "@/components/StatCard";
 import ApiKeyDisplay from "@/components/ApiKeyDisplay";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ClientDashboard() {
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['/api/client/profile']
+  });
+
+  const { data: messages } = useQuery({
+    queryKey: ['/api/client/messages']
+  });
+
+  const credits = profile?.credits || "0.00";
+  const messageCount = messages?.messages?.length || 0;
+  const firstApiKey = profile?.apiKeys?.[0];
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-8">
+        <div className="animate-pulse">
+          <div className="h-10 bg-muted rounded w-1/3 mb-2"></div>
+          <div className="h-4 bg-muted rounded w-1/2"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-8">
       <div>
@@ -15,15 +39,15 @@ export default function ClientDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           title="Total Messages Sent"
-          value="12,584"
+          value={messageCount.toLocaleString()}
           icon={MessageSquare}
-          description="Last 30 days"
+          description="All time"
         />
         <StatCard
           title="Available Credits"
-          value="$250.00"
+          value={`$${parseFloat(credits).toFixed(2)}`}
           icon={DollarSign}
-          description="Current balance • $0.02 per SMS"
+          description={`Current balance • ${profile?.currency || 'USD'}`}
         />
         <StatCard
           title="API Status"
@@ -33,11 +57,13 @@ export default function ClientDashboard() {
         />
       </div>
 
-      <ApiKeyDisplay 
-        apiKey="ibk_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
-        title="Your API Credentials"
-        description="Use this key to authenticate all API requests to Ibiki SMS"
-      />
+      {firstApiKey && (
+        <ApiKeyDisplay 
+          apiKey={`${firstApiKey.displayKey.split('...')[0]}${'•'.repeat(32)}${firstApiKey.displayKey.split('...')[1]}`}
+          title="Your API Credentials"
+          description="Use this key to authenticate all API requests to Ibiki SMS"
+        />
+      )}
 
       <div className="flex gap-3">
         <Link href="/docs">

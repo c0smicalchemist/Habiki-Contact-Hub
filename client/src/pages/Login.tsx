@@ -3,17 +3,50 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
 
+  const loginMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+    onSuccess: (data) => {
+      localStorage.setItem('token', data.token);
+      toast({
+        title: "Welcome back!",
+        description: `Logged in as ${data.user.email}`
+      });
+      if (data.user.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/dashboard');
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid credentials",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login submitted:", formData);
+    loginMutation.mutate(formData);
   };
 
   return (

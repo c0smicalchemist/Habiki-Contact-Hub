@@ -3,9 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Signup() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -14,9 +19,41 @@ export default function Signup() {
     confirmPassword: ""
   });
 
+  const signupMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return await apiRequest('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+    onSuccess: (data) => {
+      localStorage.setItem('token', data.token);
+      toast({
+        title: "Account created!",
+        description: `Your API key: ${data.apiKey}. Save this - it won't be shown again!`
+      });
+      setLocation('/dashboard');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Signup failed",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Signup submitted:", formData);
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+    signupMutation.mutate(formData);
   };
 
   return (

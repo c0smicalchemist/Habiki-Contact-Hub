@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, Settings, Activity } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,11 +8,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatCard from "@/components/StatCard";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
   const [extremeApiKey, setExtremeApiKey] = useState("");
   const [extremeCost, setExtremeCost] = useState("0.01");
   const [clientRate, setClientRate] = useState("0.02");
+
+  const { data: config } = useQuery({
+    queryKey: ['/api/admin/config']
+  });
+
+  useEffect(() => {
+    if (config?.config) {
+      setExtremeApiKey(config.config.extreme_api_key || "");
+      setExtremeCost(config.config.extreme_cost_per_sms || "0.01");
+      setClientRate(config.config.client_rate_per_sms || "0.02");
+    }
+  }, [config]);
+
+  const saveConfigMutation = useMutation({
+    mutationFn: async (data: { extremeApiKey?: string; extremeCost?: string; clientRate?: string }) => {
+      return await apiRequest('/api/admin/config', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
+      toast({
+        title: "Success",
+        description: "Configuration saved successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save configuration",
+        variant: "destructive"
+      });
+    }
+  });
 
   const clients = [
     { id: 1, name: "Acme Corp", email: "admin@acme.com", apiKey: "ibk_live_abc...xyz", status: "active", messagesSent: 1250, lastActive: "2 hours ago" },
@@ -22,7 +61,11 @@ export default function AdminDashboard() {
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Saving ExtremeSMS API key:", extremeApiKey);
+    saveConfigMutation.mutate({
+      extremeApiKey,
+      extremeCost,
+      clientRate
+    });
   };
 
   return (
