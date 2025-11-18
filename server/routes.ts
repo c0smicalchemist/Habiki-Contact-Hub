@@ -1,15 +1,633 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import express from "express";
 import { storage } from "./storage";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import axios from "axios";
+import crypto from "crypto";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
+const EXTREMESMS_BASE_URL = "https://extremesms.net";
+
+// Middleware to verify JWT token
+async function authenticateToken(req: any, res: any, next: any) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string };
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: "Invalid or expired token" });
+  }
+}
+
+// Middleware to verify admin role
+function requireAdmin(req: any, res: any, next: any) {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+}
+
+// Middleware to authenticate API key (for client API requests)
+async function authenticateApiKey(req: any, res: any, next: any) {
+  const authHeader = req.headers["authorization"];
+  const apiKey = authHeader && authHeader.split(" ")[1];
+
+  if (!apiKey) {
+    return res.status(401).json({ error: "API key required" });
+  }
+
+  try {
+    const keyHash = crypto.createHash("sha256").update(apiKey).digest("hex");
+    const storedKey = await storage.getApiKeyByHash(keyHash);
+
+    if (!storedKey || !storedKey.isActive) {
+      return res.status(401).json({ error: "Invalid API key" });
+    }
+
+    const user = await storage.getUser(storedKey.userId);
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: "User account inactive" });
+    }
+
+    req.user = { userId: user.id, role: user.role };
+    req.apiKeyId = storedKey.id;
+
+    // Update last used timestamp
+    await storage.updateApiKeyLastUsed(storedKey.id);
+
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: "Authentication error" });
+  }
+}
+
+// Helper to get pricing configuration
+async function getPricingConfig() {
+  const extremeCostConfig = await storage.getSystemConfig("extreme_cost_per_sms");
+  const clientRateConfig = await storage.getSystemConfig("client_rate_per_sms");
+
+  const extremeCost = extremeCostConfig ? parseFloat(extremeCostConfig.value) : 0.01;
+  const clientRate = clientRateConfig ? parseFloat(clientRateConfig.value) : 0.02;
+
+  return { extremeCost, clientRate };
+}
+
+// Helper to deduct credits and log message
+async function deductCreditsAndLog(
+  userId: string,
+  messageCount: number,
+  endpoint: string,
+  messageId: string,
+  status: string,
+  requestPayload: any,
+  responsePayload: any,
+  recipient?: string,
+  recipients?: string[]
+) {
+  const { extremeCost, clientRate } = await getPricingConfig();
+  
+  const totalCost = extremeCost * messageCount;
+  const totalCharge = clientRate * messageCount;
+
+  const profile = await storage.getClientProfileByUserId(userId);
+  if (!profile) {
+    throw new Error("Client profile not found");
+  }
+
+  const currentCredits = parseFloat(profile.credits);
+  if (currentCredits < totalCharge) {
+    throw new Error("Insufficient credits");
+  }
+
+  const newCredits = currentCredits - totalCharge;
+
+  // Create message log
+  const messageLog = await storage.createMessageLog({
+    userId,
+    messageId,
+    endpoint,
+    recipient: recipient || null,
+    recipients: recipients || null,
+    status,
+    costPerMessage: extremeCost.toFixed(4),
+    chargePerMessage: clientRate.toFixed(4),
+    totalCost: totalCost.toFixed(2),
+    totalCharge: totalCharge.toFixed(2),
+    messageCount,
+    requestPayload: JSON.stringify(requestPayload),
+    responsePayload: JSON.stringify(responsePayload)
+  });
+
+  // Create credit transaction
+  await storage.createCreditTransaction({
+    userId,
+    amount: (-totalCharge).toFixed(2),
+    type: "debit",
+    description: `SMS sent via ${endpoint}`,
+    balanceBefore: currentCredits.toFixed(2),
+    balanceAfter: newCredits.toFixed(2),
+    messageLogId: messageLog.id
+  });
+
+  // Update credits
+  await storage.updateClientCredits(userId, newCredits.toFixed(2));
+
+  return { messageLog, newBalance: newCredits };
+}
+
+// Helper to get ExtremeSMS API key
+async function getExtremeApiKey() {
+  const config = await storage.getSystemConfig("extreme_api_key");
+  if (!config) {
+    throw new Error("ExtremeSMS API key not configured");
+  }
+  return config.value;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  app.use(express.json());
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  // ============================================
+  // Authentication Routes
+  // ============================================
+
+  // Signup
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { email, password, name, company } = req.body;
+
+      if (!email || !password || !name) {
+        return res.status(400).json({ error: "Email, password, and name are required" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        name,
+        company: company || null,
+        role: "client",
+        isActive: true
+      });
+
+      // Create client profile with initial credits
+      await storage.createClientProfile({
+        userId: user.id,
+        credits: "0.00",
+        currency: "USD",
+        customMarkup: null
+      });
+
+      // Generate API key
+      const rawApiKey = `ibk_live_${crypto.randomBytes(24).toString("hex")}`;
+      const keyHash = crypto.createHash("sha256").update(rawApiKey).digest("hex");
+      const keyPrefix = rawApiKey.slice(0, 12);
+      const keySuffix = rawApiKey.slice(-4);
+
+      await storage.createApiKey({
+        userId: user.id,
+        keyHash,
+        keyPrefix,
+        keySuffix,
+        isActive: true
+      });
+
+      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role
+        },
+        token,
+        apiKey: rawApiKey // Only shown once
+      });
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      res.status(500).json({ error: "Signup failed" });
+    }
+  });
+
+  // Login
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.isActive) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role
+        },
+        token
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // ============================================
+  // Client Dashboard Routes
+  // ============================================
+
+  // Get user profile and credits
+  app.get("/api/client/profile", authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const profile = await storage.getClientProfileByUserId(user.id);
+      const apiKeys = await storage.getApiKeysByUserId(user.id);
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          company: user.company,
+          role: user.role
+        },
+        credits: profile?.credits || "0.00",
+        currency: profile?.currency || "USD",
+        apiKeys: apiKeys.map(key => ({
+          id: key.id,
+          displayKey: `${key.keyPrefix}...${key.keySuffix}`,
+          isActive: key.isActive,
+          createdAt: key.createdAt,
+          lastUsedAt: key.lastUsedAt
+        }))
+      });
+    } catch (error) {
+      console.error("Profile fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  // Get message logs
+  app.get("/api/client/messages", authenticateToken, async (req: any, res) => {
+    try {
+      const logs = await storage.getMessageLogsByUserId(req.user.userId, 100);
+      res.json({ success: true, messages: logs });
+    } catch (error) {
+      console.error("Message logs fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // ============================================
+  // Admin Routes
+  // ============================================
+
+  // Get all clients
+  app.get("/api/admin/clients", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      // This would need to be implemented properly to get all clients
+      res.json({ success: true, clients: [] });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch clients" });
+    }
+  });
+
+  // Get system configuration
+  app.get("/api/admin/config", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const configs = await storage.getAllSystemConfig();
+      const configMap: Record<string, string> = {};
+      configs.forEach(config => {
+        configMap[config.key] = config.value;
+      });
+
+      res.json({ success: true, config: configMap });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch configuration" });
+    }
+  });
+
+  // Update system configuration
+  app.post("/api/admin/config", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { extremeApiKey, extremeCost, clientRate } = req.body;
+
+      if (extremeApiKey) {
+        await storage.setSystemConfig("extreme_api_key", extremeApiKey);
+      }
+      if (extremeCost) {
+        await storage.setSystemConfig("extreme_cost_per_sms", extremeCost);
+      }
+      if (clientRate) {
+        await storage.setSystemConfig("client_rate_per_sms", clientRate);
+      }
+
+      res.json({ success: true, message: "Configuration updated" });
+    } catch (error) {
+      console.error("Config update error:", error);
+      res.status(500).json({ error: "Failed to update configuration" });
+    }
+  });
+
+  // ============================================
+  // API Proxy Routes (ExtremeSMS passthrough)
+  // ============================================
+
+  // Send single SMS
+  app.post("/api/v2/sms/sendsingle", authenticateApiKey, async (req: any, res) => {
+    try {
+      const { recipient, message } = req.body;
+
+      if (!recipient || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Invalid recipient phone number",
+          code: "INVALID_RECIPIENT"
+        });
+      }
+
+      // Check credits before sending
+      const profile = await storage.getClientProfileByUserId(req.user.userId);
+      const { clientRate } = await getPricingConfig();
+      
+      if (!profile || parseFloat(profile.credits) < clientRate) {
+        return res.status(402).json({ 
+          success: false, 
+          error: "Insufficient credits",
+          code: "INSUFFICIENT_CREDITS"
+        });
+      }
+
+      const extremeApiKey = await getExtremeApiKey();
+      
+      // Forward request to ExtremeSMS
+      const response = await axios.post(
+        `${EXTREMESMS_BASE_URL}/api/v2/sms/sendsingle`,
+        { recipient, message },
+        {
+          headers: {
+            "Authorization": `Bearer ${extremeApiKey}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      // Deduct credits and log
+      await deductCreditsAndLog(
+        req.user.userId,
+        1,
+        "/api/v2/sms/sendsingle",
+        response.data.messageId,
+        response.data.status,
+        { recipient, message },
+        response.data,
+        recipient
+      );
+
+      res.json(response.data);
+    } catch (error: any) {
+      if (error.message === "Insufficient credits") {
+        return res.status(402).json({ 
+          success: false, 
+          error: "Insufficient credits",
+          code: "INSUFFICIENT_CREDITS"
+        });
+      }
+      
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      
+      console.error("Send single SMS error:", error);
+      res.status(500).json({ success: false, error: "Failed to send SMS" });
+    }
+  });
+
+  // Send bulk SMS (same content)
+  app.post("/api/v2/sms/sendbulk", authenticateApiKey, async (req: any, res) => {
+    try {
+      const { recipients, content } = req.body;
+
+      if (!recipients || !Array.isArray(recipients) || !content) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Invalid parameters",
+          code: "INVALID_PARAMS"
+        });
+      }
+
+      // Check credits before sending
+      const profile = await storage.getClientProfileByUserId(req.user.userId);
+      const { clientRate } = await getPricingConfig();
+      const totalCharge = clientRate * recipients.length;
+      
+      if (!profile || parseFloat(profile.credits) < totalCharge) {
+        return res.status(402).json({ 
+          success: false, 
+          error: "Insufficient credits",
+          code: "INSUFFICIENT_CREDITS"
+        });
+      }
+
+      const extremeApiKey = await getExtremeApiKey();
+      
+      const response = await axios.post(
+        `${EXTREMESMS_BASE_URL}/api/v2/sms/sendbulk`,
+        { recipients, content },
+        {
+          headers: {
+            "Authorization": `Bearer ${extremeApiKey}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      await deductCreditsAndLog(
+        req.user.userId,
+        recipients.length,
+        "/api/v2/sms/sendbulk",
+        response.data.messageIds?.[0] || "bulk_" + Date.now(),
+        response.data.status,
+        { recipients, content },
+        response.data,
+        undefined,
+        recipients
+      );
+
+      res.json(response.data);
+    } catch (error: any) {
+      if (error.message === "Insufficient credits") {
+        return res.status(402).json({ 
+          success: false, 
+          error: "Insufficient credits",
+          code: "INSUFFICIENT_CREDITS"
+        });
+      }
+
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      
+      console.error("Send bulk SMS error:", error);
+      res.status(500).json({ success: false, error: "Failed to send bulk SMS" });
+    }
+  });
+
+  // Send bulk SMS (different content)
+  app.post("/api/v2/sms/sendbulkmulti", authenticateApiKey, async (req: any, res) => {
+    try {
+      const messages = req.body;
+
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Invalid parameters",
+          code: "INVALID_PARAMS"
+        });
+      }
+
+      // Check credits
+      const profile = await storage.getClientProfileByUserId(req.user.userId);
+      const { clientRate } = await getPricingConfig();
+      const totalCharge = clientRate * messages.length;
+      
+      if (!profile || parseFloat(profile.credits) < totalCharge) {
+        return res.status(402).json({ 
+          success: false, 
+          error: "Insufficient credits",
+          code: "INSUFFICIENT_CREDITS"
+        });
+      }
+
+      const extremeApiKey = await getExtremeApiKey();
+      
+      const response = await axios.post(
+        `${EXTREMESMS_BASE_URL}/api/v2/sms/sendbulkmulti`,
+        messages,
+        {
+          headers: {
+            "Authorization": `Bearer ${extremeApiKey}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      const recipients = messages.map(m => m.recipient);
+      await deductCreditsAndLog(
+        req.user.userId,
+        messages.length,
+        "/api/v2/sms/sendbulkmulti",
+        response.data.results?.[0]?.messageId || "multi_" + Date.now(),
+        "queued",
+        messages,
+        response.data,
+        undefined,
+        recipients
+      );
+
+      res.json(response.data);
+    } catch (error: any) {
+      if (error.message === "Insufficient credits") {
+        return res.status(402).json({ 
+          success: false, 
+          error: "Insufficient credits",
+          code: "INSUFFICIENT_CREDITS"
+        });
+      }
+
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      
+      console.error("Send bulk multi SMS error:", error);
+      res.status(500).json({ success: false, error: "Failed to send messages" });
+    }
+  });
+
+  // Check message status
+  app.get("/api/v2/sms/status/:messageId", authenticateApiKey, async (req: any, res) => {
+    try {
+      const { messageId } = req.params;
+      const extremeApiKey = await getExtremeApiKey();
+      
+      const response = await axios.get(
+        `${EXTREMESMS_BASE_URL}/api/v2/sms/status/${messageId}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${extremeApiKey}`
+          }
+        }
+      );
+
+      res.json(response.data);
+    } catch (error: any) {
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      
+      console.error("Status check error:", error);
+      res.status(500).json({ success: false, error: "Failed to check status" });
+    }
+  });
+
+  // Get account balance
+  app.get("/api/v2/account/balance", authenticateApiKey, async (req: any, res) => {
+    try {
+      const profile = await storage.getClientProfileByUserId(req.user.userId);
+      
+      if (!profile) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Profile not found" 
+        });
+      }
+
+      res.json({
+        success: true,
+        balance: parseFloat(profile.credits),
+        currency: profile.currency
+      });
+    } catch (error) {
+      console.error("Balance check error:", error);
+      res.status(500).json({ success: false, error: "Failed to get balance" });
+    }
+  });
 
   const httpServer = createServer(app);
-
   return httpServer;
 }
