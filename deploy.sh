@@ -13,11 +13,17 @@ echo ""
 # Configuration
 APP_NAME="ibiki-sms"
 DEPLOY_IN_PLACE="${DEPLOY_IN_PLACE:-true}"  # Deploy from current directory by default
-INSTALL_DIR="${INSTALL_DIR:-$(pwd)}"  # Use current directory if DEPLOY_IN_PLACE=true
 APP_USER="${APP_USER:-ibiki}"
 APP_PORT="${APP_PORT:-6000}"  # Using 6000 as default port
 DOMAIN="${DOMAIN:-_}"  # Default to catch-all (IP address access)
 SKIP_NGINX="${SKIP_NGINX:-false}"  # Set to 'true' if you manage Nginx manually
+
+# Determine install directory based on deployment mode
+if [ "$DEPLOY_IN_PLACE" = "true" ]; then
+    INSTALL_DIR="$(pwd)"
+else
+    INSTALL_DIR="${INSTALL_DIR:-/opt/${APP_NAME}}"
+fi
 
 # Colors for output
 RED='\033[0;31m'
