@@ -22,6 +22,12 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   
+  // Password Reset methods
+  setPasswordResetToken(email: string, token: string, expiry: Date): Promise<User | undefined>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  clearPasswordResetToken(userId: string): Promise<void>;
+  updateUserPassword(userId: string, newPasswordHash: string): Promise<User | undefined>;
+  
   // API Key methods
   getApiKeyByHash(keyHash: string): Promise<ApiKey | undefined>;
   getApiKeysByUserId(userId: string): Promise<ApiKey[]>;
@@ -110,6 +116,52 @@ export class MemStorage implements IStorage {
     
     const updatedUser = { ...user, ...updates };
     this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  // Password Reset methods
+  async setPasswordResetToken(email: string, token: string, expiry: Date): Promise<User | undefined> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return undefined;
+    
+    return this.updateUser(user.id, {
+      resetToken: token,
+      resetTokenExpiry: expiry
+    });
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const user = Array.from(this.users.values()).find(
+      (u) => u.resetToken === token
+    );
+    
+    if (!user) return undefined;
+    
+    // Check if token is expired
+    if (user.resetTokenExpiry && user.resetTokenExpiry < new Date()) {
+      return undefined; // Token expired
+    }
+    
+    return user;
+  }
+
+  async clearPasswordResetToken(userId: string): Promise<void> {
+    await this.updateUser(userId, {
+      resetToken: null,
+      resetTokenExpiry: null
+    });
+  }
+
+  async updateUserPassword(userId: string, newPasswordHash: string): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+    
+    const updatedUser = await this.updateUser(userId, {
+      password: newPasswordHash,
+      resetToken: null,
+      resetTokenExpiry: null
+    });
+    
     return updatedUser;
   }
 
