@@ -150,7 +150,7 @@ if [ "$DEPLOY_IN_PLACE" = "true" ]; then
     
     # Clean up unnecessary files
     log_info "Cleaning up unnecessary files..."
-    rm -rf .git .cache attached_assets node_modules/.cache 2>/dev/null || true
+    rm -rf .git .cache node_modules/.cache 2>/dev/null || true
     
     log_info "Using current directory: $INSTALL_DIR"
 else
@@ -176,7 +176,7 @@ else
     cd "$INSTALL_DIR"
     
     # Remove unnecessary files to save space
-    rm -rf .git .cache attached_assets 2>/dev/null || true
+    rm -rf .git .cache 2>/dev/null || true
     
     log_info "Files copied successfully"
 fi
