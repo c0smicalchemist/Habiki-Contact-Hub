@@ -10,7 +10,9 @@ import {
   type MessageLog,
   type InsertMessageLog,
   type CreditTransaction,
-  type InsertCreditTransaction
+  type InsertCreditTransaction,
+  type IncomingMessage,
+  type InsertIncomingMessage
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -37,8 +39,10 @@ export interface IStorage {
   
   // Client Profile methods
   getClientProfileByUserId(userId: string): Promise<ClientProfile | undefined>;
+  getClientProfileByPhoneNumber(phoneNumber: string): Promise<ClientProfile | undefined>;
   createClientProfile(profile: InsertClientProfile): Promise<ClientProfile>;
   updateClientCredits(userId: string, newCredits: string): Promise<ClientProfile | undefined>;
+  updateClientPhoneNumber(userId: string, phoneNumber: string | null): Promise<ClientProfile | undefined>;
   
   // System Config methods
   getSystemConfig(key: string): Promise<SystemConfig | undefined>;
@@ -55,6 +59,11 @@ export interface IStorage {
   createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
   getCreditTransactionsByUserId(userId: string, limit?: number): Promise<CreditTransaction[]>;
   
+  // Incoming Message methods
+  createIncomingMessage(message: InsertIncomingMessage): Promise<IncomingMessage>;
+  getIncomingMessagesByUserId(userId: string, limit?: number): Promise<IncomingMessage[]>;
+  getAllIncomingMessages(limit?: number): Promise<IncomingMessage[]>;
+  
   // Error logging methods
   getErrorLogs(level?: string): Promise<any[]>;
   
@@ -69,6 +78,7 @@ export class MemStorage implements IStorage {
   private systemConfigs: Map<string, SystemConfig>;
   private messageLogs: Map<string, MessageLog>;
   private creditTransactions: Map<string, CreditTransaction>;
+  private incomingMessages: Map<string, IncomingMessage>;
 
   constructor() {
     this.users = new Map();
@@ -77,6 +87,7 @@ export class MemStorage implements IStorage {
     this.systemConfigs = new Map();
     this.messageLogs = new Map();
     this.creditTransactions = new Map();
+    this.incomingMessages = new Map();
   }
 
   // User methods
@@ -224,10 +235,17 @@ export class MemStorage implements IStorage {
       credits: insertProfile.credits ?? "0.00",
       currency: insertProfile.currency ?? "USD",
       customMarkup: insertProfile.customMarkup ?? null,
+      assignedPhoneNumber: insertProfile.assignedPhoneNumber ?? null,
       updatedAt: new Date()
     };
     this.clientProfiles.set(id, profile);
     return profile;
+  }
+
+  async getClientProfileByPhoneNumber(phoneNumber: string): Promise<ClientProfile | undefined> {
+    return Array.from(this.clientProfiles.values()).find(
+      (profile) => profile.assignedPhoneNumber === phoneNumber,
+    );
   }
 
   async updateClientCredits(userId: string, newCredits: string): Promise<ClientProfile | undefined> {
@@ -237,6 +255,18 @@ export class MemStorage implements IStorage {
     if (!profile) return undefined;
 
     profile.credits = newCredits;
+    profile.updatedAt = new Date();
+    this.clientProfiles.set(profile.id, profile);
+    return profile;
+  }
+
+  async updateClientPhoneNumber(userId: string, phoneNumber: string | null): Promise<ClientProfile | undefined> {
+    const profile = Array.from(this.clientProfiles.values()).find(
+      (p) => p.userId === userId,
+    );
+    if (!profile) return undefined;
+
+    profile.assignedPhoneNumber = phoneNumber;
     profile.updatedAt = new Date();
     this.clientProfiles.set(profile.id, profile);
     return profile;
@@ -334,6 +364,40 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     
     return limit ? transactions.slice(0, limit) : transactions;
+  }
+
+  // Incoming Message methods
+  async createIncomingMessage(insertMessage: InsertIncomingMessage): Promise<IncomingMessage> {
+    const id = randomUUID();
+    const message: IncomingMessage = {
+      ...insertMessage,
+      id,
+      userId: insertMessage.userId ?? null,
+      firstname: insertMessage.firstname ?? null,
+      lastname: insertMessage.lastname ?? null,
+      business: insertMessage.business ?? null,
+      matchedBlockWord: insertMessage.matchedBlockWord ?? null,
+      usedmodem: insertMessage.usedmodem ?? null,
+      port: insertMessage.port ?? null,
+      createdAt: new Date()
+    };
+    this.incomingMessages.set(id, message);
+    return message;
+  }
+
+  async getIncomingMessagesByUserId(userId: string, limit: number = 100): Promise<IncomingMessage[]> {
+    const messages = Array.from(this.incomingMessages.values())
+      .filter((msg) => msg.userId === userId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
+    return limit ? messages.slice(0, limit) : messages;
+  }
+
+  async getAllIncomingMessages(limit: number = 100): Promise<IncomingMessage[]> {
+    const messages = Array.from(this.incomingMessages.values())
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
+    return limit ? messages.slice(0, limit) : messages;
   }
 
   // Error logging methods
