@@ -32,6 +32,14 @@ chmod +x deploy.sh
 sudo ./deploy.sh
 ```
 
+**If you have other services running on the same server:**
+```bash
+# Deploy on custom port with subdomain
+APP_PORT=3100 DOMAIN=api.yourdomain.com sudo ./deploy.sh
+```
+
+See [MULTI_SERVICE.md](./MULTI_SERVICE.md) for complete multi-service deployment guide.
+
 The script will automatically:
 - Install Node.js 20
 - Create application user

@@ -14,8 +14,9 @@ echo ""
 APP_NAME="yubin-dash"
 INSTALL_DIR="/opt/${APP_NAME}"
 APP_USER="${APP_USER:-yubin}"
-APP_PORT="${APP_PORT:-3000}"
+APP_PORT="${APP_PORT:-3100}"  # Using 3100 to avoid conflict with common port 3000
 DOMAIN="${DOMAIN:-api.yubindash.com}"
+SKIP_NGINX="${SKIP_NGINX:-false}"  # Set to 'true' if you manage Nginx manually
 
 # Colors for output
 RED='\033[0;31m'
@@ -53,11 +54,23 @@ else
         log_warn "Node.js version is too old. Upgrading..."
         curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
         apt-get install -y nodejs
+    else
+        log_info "Node.js already installed, skipping..."
     fi
 fi
 
 log_info "Node.js version: $(node -v)"
 log_info "npm version: $(npm -v)"
+
+# Check if port is already in use
+log_info "Checking if port ${APP_PORT} is available..."
+if ss -ltnp | grep -q ":${APP_PORT} "; then
+    log_error "Port ${APP_PORT} is already in use!"
+    log_error "Please set a different port: APP_PORT=3100 ./deploy.sh"
+    exit 1
+else
+    log_info "Port ${APP_PORT} is available"
+fi
 
 # Step 2: Create application user if it doesn't exist
 if ! id "$APP_USER" &>/dev/null; then
@@ -135,6 +148,8 @@ log_info "Checking PM2 installation..."
 if ! command -v pm2 &> /dev/null; then
     log_info "Installing PM2..."
     npm install -g pm2
+else
+    log_info "PM2 already installed, skipping..."
 fi
 
 # Step 9: Set up PM2 ecosystem file
@@ -175,16 +190,19 @@ pm2 startup systemd -u "$APP_USER" --hp "$INSTALL_DIR"
 sudo -u "$APP_USER" pm2 save
 
 # Step 11: Install and configure Nginx
-log_info "Checking Nginx installation..."
-if ! command -v nginx &> /dev/null; then
-    log_info "Installing Nginx..."
-    apt-get update
-    apt-get install -y nginx
-fi
+if [ "$SKIP_NGINX" != "true" ]; then
+    log_info "Checking Nginx installation..."
+    if ! command -v nginx &> /dev/null; then
+        log_info "Installing Nginx..."
+        apt-get update
+        apt-get install -y nginx
+    else
+        log_info "Nginx already installed, skipping..."
+    fi
 
-# Step 12: Create Nginx configuration
-log_info "Creating Nginx configuration..."
-cat > "/etc/nginx/sites-available/${APP_NAME}" << EOF
+    # Step 12: Create Nginx configuration
+    log_info "Creating Nginx configuration..."
+    cat > "/etc/nginx/sites-available/${APP_NAME}" << EOF
 server {
     listen 80;
     server_name ${DOMAIN} www.${DOMAIN};
@@ -216,17 +234,29 @@ server {
 }
 EOF
 
-# Enable site
-ln -sf "/etc/nginx/sites-available/${APP_NAME}" "/etc/nginx/sites-enabled/"
+    # Enable site (check if already exists)
+    if [ -L "/etc/nginx/sites-enabled/${APP_NAME}" ]; then
+        log_info "Nginx site already enabled, skipping..."
+    else
+        log_info "Enabling Nginx site..."
+        ln -sf "/etc/nginx/sites-available/${APP_NAME}" "/etc/nginx/sites-enabled/"
+    fi
 
-# Test Nginx configuration
-log_info "Testing Nginx configuration..."
-nginx -t
-
-# Reload Nginx
-log_info "Reloading Nginx..."
-systemctl reload nginx
-systemctl enable nginx
+    # Test Nginx configuration
+    log_info "Testing Nginx configuration..."
+    if nginx -t; then
+        # Reload Nginx
+        log_info "Reloading Nginx..."
+        systemctl reload nginx
+        systemctl enable nginx
+    else
+        log_error "Nginx configuration test failed!"
+        log_error "Please check the configuration manually"
+    fi
+else
+    log_info "Skipping Nginx configuration (SKIP_NGINX=true)"
+    log_warn "You'll need to configure your reverse proxy manually"
+fi
 
 # Step 13: Set up firewall (if UFW is installed)
 if command -v ufw &> /dev/null; then
@@ -239,13 +269,23 @@ echo "================================="
 echo "Deployment Complete!"
 echo "================================="
 echo ""
-log_info "Application is running at: http://${DOMAIN}"
-log_info "Application is also accessible at: http://$(hostname -I | awk '{print $1}')"
-echo ""
-log_info "Next steps:"
-echo "  1. Point your domain ${DOMAIN} to this server's IP address"
-echo "  2. Set up SSL with: sudo certbot --nginx -d ${DOMAIN}"
-echo "  3. Access admin panel at: http://${DOMAIN}/admin"
+log_info "Application is running on port: ${APP_PORT}"
+log_info "Application is accessible at: http://$(hostname -I | awk '{print $1}'):${APP_PORT}"
+
+if [ "$SKIP_NGINX" != "true" ]; then
+    log_info "With Nginx configured, also accessible at: http://${DOMAIN}"
+    echo ""
+    log_info "Next steps:"
+    echo "  1. Point your domain/subdomain ${DOMAIN} to this server's IP address"
+    echo "  2. Set up SSL with: sudo certbot --nginx -d ${DOMAIN}"
+else
+    echo ""
+    log_info "Next steps:"
+    echo "  1. Configure your reverse proxy to forward requests to port ${APP_PORT}"
+    echo "  2. Point your domain to this server's IP address"
+fi
+
+echo "  3. Access signup at: http://${DOMAIN}/signup (first user = admin)"
 echo "  4. Configure ExtremeSMS API key in admin panel"
 echo ""
 log_info "Useful commands:"
@@ -253,6 +293,13 @@ echo "  - View logs: pm2 logs ${APP_NAME}"
 echo "  - Restart app: pm2 restart ${APP_NAME}"
 echo "  - Stop app: pm2 stop ${APP_NAME}"
 echo "  - App status: pm2 status"
+echo "  - All PM2 processes: pm2 list"
+echo ""
+log_info "Running alongside other services:"
+echo "  - App installed to: ${INSTALL_DIR}"
+echo "  - Running on port: ${APP_PORT}"
+echo "  - PM2 process name: ${APP_NAME}"
+echo "  - Nginx config: /etc/nginx/sites-available/${APP_NAME}"
 echo ""
 log_warn "Remember to update .env file at: ${INSTALL_DIR}/.env"
 echo ""

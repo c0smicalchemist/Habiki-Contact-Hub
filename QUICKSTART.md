@@ -37,6 +37,12 @@ chmod +x deploy.sh
 sudo ./deploy.sh
 ```
 
+**Running alongside other services?** Use:
+```bash
+# Deploy on custom port with subdomain
+APP_PORT=3100 DOMAIN=api.yourdomain.com sudo ./deploy.sh
+```
+
 The script will automatically:
 - ✅ Install Node.js 20
 - ✅ Create application user
@@ -160,9 +166,22 @@ sudo systemctl restart nginx
 
 ---
 
+## 🔀 Running with Other Services
+
+If you have another service on the same server:
+
+```bash
+# Deploy on different port
+APP_PORT=3100 DOMAIN=api.yourdomain.com sudo ./deploy.sh
+```
+
+See `MULTI_SERVICE.md` for complete multi-service guide.
+
 ## 📚 Full Documentation
 
-For detailed information, see `DEPLOYMENT.md`
+- **MULTI_SERVICE.md** - Running alongside other applications
+- **DEPLOYMENT.md** - Complete deployment guide
+- **README.md** - Full project documentation
 
 ---
 
