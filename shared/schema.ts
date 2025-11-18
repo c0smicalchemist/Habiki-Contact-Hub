@@ -42,6 +42,7 @@ export const clientProfiles = pgTable("client_profiles", {
   credits: decimal("credits", { precision: 10, scale: 2 }).notNull().default("0.00"),
   currency: text("currency").notNull().default("USD"),
   customMarkup: decimal("custom_markup", { precision: 10, scale: 4 }), // Optional custom markup for this client
+  assignedPhoneNumber: text("assigned_phone_number"), // Phone number assigned to this client for routing incoming SMS
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
@@ -92,6 +93,31 @@ export const creditTransactions = pgTable("credit_transactions", {
   createdAtIdx: index("transaction_created_at_idx").on(table.createdAt),
 }));
 
+// Incoming SMS messages from ExtremeSMS webhook
+export const incomingMessages = pgTable("incoming_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id), // Assigned client, null if unassigned
+  from: text("from").notNull(), // Sender phone number
+  firstname: text("firstname"),
+  lastname: text("lastname"),
+  business: text("business"),
+  message: text("message").notNull(),
+  status: text("status").notNull(), // "received" or "blocked"
+  matchedBlockWord: text("matched_block_word"),
+  receiver: text("receiver").notNull(), // Your phone number that received the SMS
+  usedmodem: text("usedmodem"),
+  port: text("port"),
+  timestamp: timestamp("timestamp").notNull(), // From ExtremeSMS
+  messageId: text("message_id").notNull(), // ExtremeSMS message ID
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  userIdIdx: index("incoming_user_id_idx").on(table.userId),
+  receiverIdx: index("incoming_receiver_idx").on(table.receiver),
+  timestampIdx: index("incoming_timestamp_idx").on(table.timestamp),
+  messageIdIdx: index("incoming_message_id_idx").on(table.messageId),
+  fromIdx: index("incoming_from_idx").on(table.from),
+}));
+
 // Zod schemas and types
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -124,6 +150,11 @@ export const insertCreditTransactionSchema = createInsertSchema(creditTransactio
   createdAt: true,
 });
 
+export const insertIncomingMessageSchema = createInsertSchema(incomingMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -141,3 +172,6 @@ export type InsertMessageLog = z.infer<typeof insertMessageLogSchema>;
 
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+
+export type IncomingMessage = typeof incomingMessages.$inferSelect;
+export type InsertIncomingMessage = z.infer<typeof insertIncomingMessageSchema>;
