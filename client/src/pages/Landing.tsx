@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Users, Activity, ArrowRight, MessageSquare } from "lucide-react";
+import { Shield, Users, Activity, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import CodeBlock from "@/components/CodeBlock";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import logoUrl from "@assets/Yubin_Dash_NOBG_1763476645991.png";
 
 export default function Landing() {
   const { t } = useLanguage();
@@ -37,11 +38,9 @@ export default function Landing() {
       <header className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-8 h-8 text-primary" />
-                <span className="text-xl font-bold">Ibiki SMS</span>
-              </div>
+            <div className="flex items-center gap-3">
+              <img src={logoUrl} alt="Ibiki SMS" className="h-12 w-auto" />
+              <span className="text-xl font-bold">Ibiki SMS</span>
             </div>
             <div className="flex items-center gap-3">
               <LanguageToggle />
