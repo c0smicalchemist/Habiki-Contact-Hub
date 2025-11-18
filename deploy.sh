@@ -43,6 +43,46 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# PRE-FLIGHT CHECKS - Verify required files exist
+log_info "Running pre-flight checks..."
+
+if [ ! -f "package.json" ]; then
+    log_error "package.json not found in current directory!"
+    log_error "Current directory: $(pwd)"
+    log_error ""
+    log_error "Make sure you:"
+    log_error "  1. Extracted the ibiki-sms.zip file"
+    log_error "  2. cd into the extracted folder"
+    log_error "  3. Run: sudo ./deploy.sh"
+    exit 1
+fi
+
+if [ ! -d "client" ] || [ ! -d "server" ] || [ ! -d "shared" ]; then
+    log_error "Required directories (client/, server/, shared/) not found!"
+    log_error "Current directory: $(pwd)"
+    log_error "Files found: $(ls -la)"
+    log_error ""
+    log_error "Make sure you extracted ibiki-sms.zip and are in the correct folder."
+    exit 1
+fi
+
+if [ ! -f "vite.config.ts" ] || [ ! -f "tsconfig.json" ]; then
+    log_error "Required config files not found!"
+    log_error "Make sure you have the complete project files."
+    exit 1
+fi
+
+log_info "Pre-flight checks passed!"
+log_info "Project files found:"
+log_info "  - package.json: $(ls -lh package.json | awk '{print $5}')"
+log_info "  - client/: $(find client -type f | wc -l) files"
+log_info "  - server/: $(find server -type f | wc -l) files"
+log_info "  - shared/: $(find shared -type f | wc -l) files"
+
 # Step 1: System requirements check
 log_info "Checking system requirements..."
 
@@ -85,21 +125,36 @@ fi
 # Step 4: Copy application files
 log_info "Installing application to $INSTALL_DIR..."
 
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
-
 if [ -d "$INSTALL_DIR" ]; then
     log_warn "Backing up existing installation..."
     mv "$INSTALL_DIR" "${INSTALL_DIR}.backup.$(date +%s)"
 fi
 
 mkdir -p "$INSTALL_DIR"
-cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/" 2>/dev/null || cp -r ./* "$INSTALL_DIR/"
+
+# Copy all files from current directory to install directory
+log_info "Copying files from $SCRIPT_DIR to $INSTALL_DIR..."
+cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/" 2>/dev/null || {
+    log_error "Failed to copy files!"
+    exit 1
+}
+
+# Also copy hidden files if they exist
+cp -r "$SCRIPT_DIR"/.??* "$INSTALL_DIR/" 2>/dev/null || true
+
 cd "$INSTALL_DIR"
 
-# Remove .git directory to save space
-rm -rf .git
+# Remove unnecessary files to save space
+rm -rf .git .cache attached_assets 2>/dev/null || true
+rm -f *.md 2>/dev/null || true
+
+# Verify critical files were copied
+if [ ! -f "$INSTALL_DIR/package.json" ]; then
+    log_error "Installation failed - package.json not found in $INSTALL_DIR"
+    exit 1
+fi
+
+log_info "Files copied successfully"
 
 # Step 5: Create .env file
 if [ ! -f "$INSTALL_DIR/.env" ]; then
@@ -138,32 +193,36 @@ cd "$INSTALL_DIR"
 sudo -u "$APP_USER" npm ci --production=false
 
 log_info "Building application..."
-# Build both frontend and backend
-# The npm build script handles both vite build (frontend) and esbuild (backend)
-# We override the backend build with proper externals
-sudo -u "$APP_USER" npm run build 2>&1 | tail -20 || {
-    log_warn "Standard build had issues, trying custom build..."
-    # Frontend build
-    sudo -u "$APP_USER" npx vite build
-    # Backend build with proper external exclusions
-    sudo -u "$APP_USER" npx esbuild server/index.ts \
-      --platform=node \
-      --packages=external \
-      --bundle \
-      --format=esm \
-      --external:vite \
-      --external:@vitejs/* \
-      --external:@replit/* \
-      --outdir=dist
-}
+# Frontend build
+log_info "Building frontend with Vite..."
+sudo -u "$APP_USER" npx vite build
 
-# Verify build
+# Backend build with proper external exclusions
+log_info "Building backend with esbuild..."
+sudo -u "$APP_USER" npx esbuild server/index.ts \
+  --platform=node \
+  --packages=external \
+  --bundle \
+  --format=esm \
+  --external:vite \
+  --external:@vitejs/* \
+  --external:@replit/* \
+  --outdir=dist
+
+# Verify builds
+if [ ! -d "$INSTALL_DIR/dist/client" ]; then
+    log_error "Frontend build failed - dist/client not found"
+    exit 1
+fi
+
 if [ ! -f "$INSTALL_DIR/dist/index.js" ]; then
-    log_error "Build failed - dist/index.js not found"
+    log_error "Backend build failed - dist/index.js not found"
     exit 1
 fi
 
 log_info "Build successful!"
+log_info "  - Frontend: dist/client/"
+log_info "  - Backend: dist/index.js"
 
 # Step 8: Install PM2 globally if not present
 log_info "Checking PM2 installation..."
@@ -210,6 +269,18 @@ sudo -u "$APP_USER" pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
 log_info "Configuring PM2 startup..."
 pm2 startup systemd -u "$APP_USER" --hp "/home/$APP_USER" 2>/dev/null || true
 sudo -u "$APP_USER" pm2 save
+
+# Wait a moment for PM2 to start the app
+sleep 2
+
+# Check if app is running
+if sudo -u "$APP_USER" pm2 list | grep -q "$APP_NAME.*online"; then
+    log_info "Application started successfully!"
+else
+    log_error "Application failed to start!"
+    log_error "Check logs with: pm2 logs $APP_NAME"
+    exit 1
+fi
 
 # Step 11: Install and configure Nginx
 if [ "$SKIP_NGINX" != "true" ]; then
