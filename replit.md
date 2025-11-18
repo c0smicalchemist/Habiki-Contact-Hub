@@ -6,6 +6,15 @@ Ibiki SMS is a professional SMS API middleware platform that acts as a secure pa
 
 ## Recent Changes (November 18, 2025)
 
+### Version 7 (Latest)
+1. **API Documentation Updated**: Changed from api.ibikisms.com to http://151.243.109.79 (server IP)
+2. **Correct API Routes**: All curl examples now include /api prefix (e.g., /api/v2/sms/sendsingle)
+3. **TypeScript Fixed**: Resolved all LSP errors by importing User type
+4. **Test Connection**: Functional button to test ExtremeSMS API connectivity with status badge
+5. **Real Client Data**: Admin dashboard shows actual clients from database (no dummy data)
+6. **Verified Proxy Routing**: All /api/v2/* routes correctly forward to ExtremeSMS
+
+### Previous Updates
 1. **Multilingual Support**: Implemented English/Chinese language toggle throughout the application
 2. **Add Credits Security**: Restricted add-credits endpoint to admin-only with requireAdmin middleware
 3. **Navigation Improvements**: Added back buttons to all dashboard pages (Client Dashboard, Admin Dashboard, API Docs)

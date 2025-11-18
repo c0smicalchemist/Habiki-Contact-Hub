@@ -11,7 +11,7 @@ export default function ApiDocs() {
       path: "/api/v2/sms/sendsingle",
       title: "Send a single SMS message",
       description: "Send a single SMS message to a recipient.",
-      requestExample: `curl -X POST https://api.ibikisms.com/v2/sms/sendsingle \\
+      requestExample: `curl -X POST http://151.243.109.79/api/v2/sms/sendsingle \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"recipient": "+1234567890", "message": "Hello from Ibiki SMS!"}'`,
@@ -26,7 +26,7 @@ export default function ApiDocs() {
       path: "/api/v2/sms/sendbulk",
       title: "Send bulk SMS (same content)",
       description: "Send the same SMS message to multiple recipients in a single API call.",
-      requestExample: `curl -X POST https://api.ibikisms.com/v2/sms/sendbulk \\
+      requestExample: `curl -X POST http://151.243.109.79/api/v2/sms/sendbulk \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -45,7 +45,7 @@ export default function ApiDocs() {
       path: "/api/v2/sms/sendbulkmulti",
       title: "Send bulk SMS (different content)",
       description: "Send different SMS messages to multiple recipients in a single API call.",
-      requestExample: `curl -X POST https://api.ibikisms.com/v2/sms/sendbulkmulti \\
+      requestExample: `curl -X POST http://151.243.109.79/api/v2/sms/sendbulkmulti \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '[
@@ -66,7 +66,7 @@ export default function ApiDocs() {
       path: "/api/v2/sms/status/{messageId}",
       title: "Check message delivery status",
       description: "Check the delivery status of a previously sent message.",
-      requestExample: `curl -X GET https://api.ibikisms.com/v2/sms/status/60f1a5b3e6e7c12345678901 \\
+      requestExample: `curl -X GET http://151.243.109.79/api/v2/sms/status/60f1a5b3e6e7c12345678901 \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       responseExample: `{
   "success": true,
@@ -80,7 +80,7 @@ export default function ApiDocs() {
       path: "/api/v2/account/balance",
       title: "Get account credit balance",
       description: "Get the current credit balance for your account.",
-      requestExample: `curl -X GET https://api.ibikisms.com/v2/account/balance \\
+      requestExample: `curl -X GET http://151.243.109.79/api/v2/account/balance \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       responseExample: `{
   "success": true,
