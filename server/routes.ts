@@ -375,6 +375,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add credits to client account (ADMIN ONLY)
+  app.post("/api/admin/add-credits", authenticateToken, requireAdmin, async (req: any, res) => {
+    try {
+      const { amount, userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ error: "Invalid amount - must be positive number" });
+      }
+
+      // Get current profile
+      const profile = await storage.getClientProfileByUserId(userId);
+      if (!profile) {
+        return res.status(404).json({ error: "Client profile not found" });
+      }
+
+      // Calculate new balance
+      const balanceBefore = profile.credits;
+      const newBalance = (parseFloat(profile.credits) + parseFloat(amount)).toFixed(2);
+      
+      // Update credits
+      await storage.updateClientCredits(userId, newBalance);
+
+      // Log the transaction
+      await storage.createCreditTransaction({
+        userId: userId,
+        amount: parseFloat(amount).toString(),
+        type: "admin_credit_add",
+        description: `Admin added ${amount} credits`,
+        balanceBefore: balanceBefore,
+        balanceAfter: newBalance
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Credits added successfully",
+        newBalance 
+      });
+    } catch (error) {
+      console.error("Add credits error:", error);
+      res.status(500).json({ error: "Failed to add credits" });
+    }
+  });
+
   // ============================================
   // API Proxy Routes (ExtremeSMS passthrough)
   // ============================================

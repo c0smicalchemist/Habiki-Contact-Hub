@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Settings, Activity } from "lucide-react";
+import { Users, Settings, Activity, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { Link } from "wouter";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -75,9 +76,16 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <DashboardHeader />
       <div className="p-6 space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">{t('admin.title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('admin.subtitle')}</p>
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="ghost" size="icon" data-testid="button-back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">{t('admin.title')}</h1>
+            <p className="text-muted-foreground mt-2">{t('admin.subtitle')}</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

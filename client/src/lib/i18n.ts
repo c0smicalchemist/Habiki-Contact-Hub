@@ -56,6 +56,9 @@ export const translations = {
     'dashboard.apiKey.description': 'Use this key to authenticate all API requests',
     'dashboard.buttons.viewDocs': 'View API Documentation',
     'dashboard.buttons.addCredits': 'Add Credits',
+    'dashboard.addCredits.success': 'Credits added successfully',
+    'dashboard.addCredits.successDesc': 'Your credit balance has been updated',
+    'dashboard.addCredits.error': 'Failed to add credits',
     
     // Admin Dashboard
     'admin.title': 'Admin Dashboard',
@@ -178,6 +181,9 @@ export const translations = {
     'dashboard.apiKey.description': '使用此密钥验证所有API请求',
     'dashboard.buttons.viewDocs': '查看API文档',
     'dashboard.buttons.addCredits': '添加积分',
+    'dashboard.addCredits.success': '积分添加成功',
+    'dashboard.addCredits.successDesc': '您的积分余额已更新',
+    'dashboard.addCredits.error': '添加积分失败',
     
     // Admin Dashboard
     'admin.title': '管理仪表板',

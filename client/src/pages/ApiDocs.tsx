@@ -1,6 +1,8 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, ArrowLeft } from "lucide-react";
 import ApiEndpointCard from "@/components/ApiEndpointCard";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function ApiDocs() {
   const endpoints = [
@@ -90,11 +92,18 @@ export default function ApiDocs() {
 
   return (
     <div className="p-6 space-y-8 max-w-5xl">
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight">API Documentation</h1>
-        <p className="text-muted-foreground mt-2">
-          Complete reference for the Ibiki SMS API v2.0
-        </p>
+      <div className="flex items-center gap-4">
+        <Link href="/dashboard">
+          <Button variant="ghost" size="icon" data-testid="button-back">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">API Documentation</h1>
+          <p className="text-muted-foreground mt-2">
+            Complete reference for the Ibiki SMS API v2.0
+          </p>
+        </div>
       </div>
 
       <Alert data-testid="alert-authentication">
