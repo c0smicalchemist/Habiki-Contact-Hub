@@ -24,81 +24,81 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Logging functions
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    echo -e "${GREEN}[✓]${NC} $1"
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}[!]${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[✗]${NC} $1"
 }
 
 # Check if running as root
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
     log_error "Please run as root (use sudo)"
     exit 1
 fi
 
-# Step 1: Install Node.js 20 if not present
+# Step 1: System requirements check
+log_info "Checking system requirements..."
+
+# Check if port is available
+if netstat -tuln 2>/dev/null | grep -q ":${APP_PORT} " || ss -tuln 2>/dev/null | grep -q ":${APP_PORT} "; then
+    log_error "Port ${APP_PORT} is already in use!"
+    log_warn "Use a different port: export APP_PORT=3200 && sudo ./deploy.sh"
+    exit 1
+fi
+
+log_info "Port ${APP_PORT} is available"
+
+# Step 2: Install Node.js if not present
 log_info "Checking Node.js installation..."
 if ! command -v node &> /dev/null; then
     log_info "Installing Node.js 20..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     apt-get install -y nodejs
+    log_info "Node.js installed: $(node --version)"
 else
-    NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+    NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
     if [ "$NODE_VERSION" -lt 18 ]; then
-        log_warn "Node.js version is too old. Upgrading..."
+        log_warn "Node.js version is too old. Installing Node.js 20..."
         curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
         apt-get install -y nodejs
     else
-        log_info "Node.js already installed, skipping..."
+        log_info "Node.js already installed: $(node --version)"
     fi
 fi
 
-log_info "Node.js version: $(node -v)"
-log_info "npm version: $(npm -v)"
-
-# Check if port is already in use
-log_info "Checking if port ${APP_PORT} is available..."
-if ss -ltnp | grep -q ":${APP_PORT} "; then
-    log_error "Port ${APP_PORT} is already in use!"
-    log_error "Please set a different port: APP_PORT=3100 ./deploy.sh"
-    exit 1
-else
-    log_info "Port ${APP_PORT} is available"
-fi
-
-# Step 2: Create application user if it doesn't exist
-if ! id "$APP_USER" &>/dev/null; then
-    log_info "Creating application user: $APP_USER"
-    useradd -r -s /bin/bash -d "$INSTALL_DIR" "$APP_USER"
+# Step 3: Create application user
+log_info "Setting up application user..."
+if ! id -u "$APP_USER" &>/dev/null; then
+    useradd -r -m -s /bin/bash "$APP_USER"
+    log_info "Created user: $APP_USER"
 else
     log_info "User $APP_USER already exists"
 fi
 
-# Step 3: Create installation directory
-log_info "Creating installation directory: $INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
-
 # Step 4: Copy application files
-log_info "Copying application files..."
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+log_info "Installing application to $INSTALL_DIR..."
+if [ -d "$INSTALL_DIR" ]; then
+    log_warn "Backing up existing installation..."
+    mv "$INSTALL_DIR" "${INSTALL_DIR}.backup.$(date +%s)"
+fi
 
-# Copy all files except node_modules and build artifacts
-rsync -av --exclude='node_modules' \
-          --exclude='dist' \
-          --exclude='.git' \
-          --exclude='deploy.sh' \
-          --exclude='*.md' \
-          "$SCRIPT_DIR/" "$INSTALL_DIR/"
+mkdir -p "$INSTALL_DIR"
+cp -r . "$INSTALL_DIR/"
+cd "$INSTALL_DIR"
 
-# Step 5: Set up environment file if it doesn't exist
+# Remove .git directory to save space
+rm -rf .git
+
+# Step 5: Create .env file
 if [ ! -f "$INSTALL_DIR/.env" ]; then
-    log_info "Creating .env file from template..."
+    log_info "Creating environment configuration..."
     
     # Generate random secrets
     JWT_SECRET=$(openssl rand -hex 32)
@@ -113,15 +113,7 @@ HOST=0.0.0.0
 JWT_SECRET=${JWT_SECRET}
 SESSION_SECRET=${JWT_SECRET}
 
-# ExtremeSMS Configuration (set via admin panel after deployment)
-EXTREMESMS_API_KEY=
-EXTREMESMS_BASE_URL=https://extremesms.net
-
-# Pricing (can be changed in admin panel)
-DEFAULT_EXTREME_COST=0.01
-DEFAULT_CLIENT_RATE=0.02
-
-# Server Configuration
+# Logging
 LOG_LEVEL=info
 EOF
 
@@ -141,7 +133,32 @@ cd "$INSTALL_DIR"
 sudo -u "$APP_USER" npm ci --production=false
 
 log_info "Building application..."
-sudo -u "$APP_USER" npm run build
+# Build both frontend and backend
+# The npm build script handles both vite build (frontend) and esbuild (backend)
+# We override the backend build with proper externals
+sudo -u "$APP_USER" npm run build 2>&1 | tail -20 || {
+    log_warn "Standard build had issues, trying custom build..."
+    # Frontend build
+    sudo -u "$APP_USER" npx vite build
+    # Backend build with proper external exclusions
+    sudo -u "$APP_USER" npx esbuild server/index.ts \
+      --platform=node \
+      --packages=external \
+      --bundle \
+      --format=esm \
+      --external:vite \
+      --external:@vitejs/* \
+      --external:@replit/* \
+      --outdir=dist
+}
+
+# Verify build
+if [ ! -f "$INSTALL_DIR/dist/index.js" ]; then
+    log_error "Build failed - dist/index.js not found"
+    exit 1
+fi
+
+log_info "Build successful!"
 
 # Step 8: Install PM2 globally if not present
 log_info "Checking PM2 installation..."
@@ -186,7 +203,7 @@ sudo -u "$APP_USER" pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
 
 # Set up PM2 to start on boot
 log_info "Configuring PM2 startup..."
-pm2 startup systemd -u "$APP_USER" --hp "$INSTALL_DIR"
+pm2 startup systemd -u "$APP_USER" --hp "/home/$APP_USER" 2>/dev/null || true
 sudo -u "$APP_USER" pm2 save
 
 # Step 11: Install and configure Nginx
@@ -234,34 +251,19 @@ server {
 }
 EOF
 
-    # Enable site (check if already exists)
-    if [ -L "/etc/nginx/sites-enabled/${APP_NAME}" ]; then
-        log_info "Nginx site already enabled, skipping..."
-    else
-        log_info "Enabling Nginx site..."
-        ln -sf "/etc/nginx/sites-available/${APP_NAME}" "/etc/nginx/sites-enabled/"
-    fi
-
+    # Enable site
+    ln -sf "/etc/nginx/sites-available/${APP_NAME}" "/etc/nginx/sites-enabled/${APP_NAME}"
+    
     # Test Nginx configuration
-    log_info "Testing Nginx configuration..."
-    if nginx -t; then
-        # Reload Nginx
-        log_info "Reloading Nginx..."
+    if nginx -t 2>/dev/null; then
+        log_info "Nginx configuration valid"
         systemctl reload nginx
-        systemctl enable nginx
     else
-        log_error "Nginx configuration test failed!"
-        log_error "Please check the configuration manually"
+        log_error "Nginx configuration invalid"
+        log_warn "Please check /etc/nginx/sites-available/${APP_NAME}"
     fi
 else
     log_info "Skipping Nginx configuration (SKIP_NGINX=true)"
-    log_warn "You'll need to configure your reverse proxy manually"
-fi
-
-# Step 13: Set up firewall (if UFW is installed)
-if command -v ufw &> /dev/null; then
-    log_info "Configuring firewall..."
-    ufw allow 'Nginx Full' 2>/dev/null || true
 fi
 
 echo ""
@@ -269,37 +271,34 @@ echo "================================="
 echo "Deployment Complete!"
 echo "================================="
 echo ""
-log_info "Application is running on port: ${APP_PORT}"
-log_info "Application is accessible at: http://$(hostname -I | awk '{print $1}'):${APP_PORT}"
-
+log_info "Application deployed successfully!"
+echo ""
+echo "Service Information:"
+echo "  - Name: ${APP_NAME}"
+echo "  - Port: ${APP_PORT}"
+echo "  - Directory: ${INSTALL_DIR}"
+echo "  - User: ${APP_USER}"
+echo ""
+echo "Access your application:"
+echo "  - Local: http://localhost:${APP_PORT}"
+echo "  - Public IP: http://YOUR_SERVER_IP:${APP_PORT}"
 if [ "$SKIP_NGINX" != "true" ]; then
-    log_info "With Nginx configured, also accessible at: http://${DOMAIN}"
-    echo ""
-    log_info "Next steps:"
-    echo "  1. Point your domain/subdomain ${DOMAIN} to this server's IP address"
-    echo "  2. Set up SSL with: sudo certbot --nginx -d ${DOMAIN}"
-else
-    echo ""
-    log_info "Next steps:"
-    echo "  1. Configure your reverse proxy to forward requests to port ${APP_PORT}"
-    echo "  2. Point your domain to this server's IP address"
+    echo "  - Domain: http://${DOMAIN}"
 fi
-
-echo "  3. Access signup at: http://${DOMAIN}/signup (first user = admin)"
-echo "  4. Configure ExtremeSMS API key in admin panel"
 echo ""
-log_info "Useful commands:"
+echo "Useful commands:"
 echo "  - View logs: pm2 logs ${APP_NAME}"
-echo "  - Restart app: pm2 restart ${APP_NAME}"
-echo "  - Stop app: pm2 stop ${APP_NAME}"
-echo "  - App status: pm2 status"
-echo "  - All PM2 processes: pm2 list"
+echo "  - Restart: pm2 restart ${APP_NAME}"
+echo "  - Status: pm2 status"
+echo "  - Monitor: pm2 monit"
 echo ""
-log_info "Running alongside other services:"
-echo "  - App installed to: ${INSTALL_DIR}"
-echo "  - Running on port: ${APP_PORT}"
-echo "  - PM2 process name: ${APP_NAME}"
-echo "  - Nginx config: /etc/nginx/sites-available/${APP_NAME}"
+echo "Next steps:"
+echo "  1. Visit your application in a browser"
+echo "  2. Create your admin account (first user is auto-admin)"
+echo "  3. Configure ExtremeSMS API key in Admin Dashboard"
+if [ "$SKIP_NGINX" != "true" ]; then
+    echo "  4. Set up SSL: sudo certbot --nginx -d ${DOMAIN}"
+fi
 echo ""
-log_warn "Remember to update .env file at: ${INSTALL_DIR}/.env"
-echo ""
+echo "Configuration file: ${INSTALL_DIR}/.env"
+echo "================================="
