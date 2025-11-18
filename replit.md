@@ -132,6 +132,8 @@ Preferred communication style: Simple, everyday language.
 - Nginx reverse proxy for HTTPS/domain routing
 - Ubuntu/Debian Linux server environment
 - Automated 1-click deployment script (deploy.sh)
+- Deploy in-place from /root (default) or copy to /opt
 - Complete deployment documentation (DEPLOYMENT.md, QUICKSTART.md)
 - First user auto-promoted to admin for easy setup
 - Server target: 151.243.109.79
+- Port: 6000 (internal), 80 (Nginx proxy)

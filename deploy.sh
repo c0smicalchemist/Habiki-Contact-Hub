@@ -12,7 +12,8 @@ echo ""
 
 # Configuration
 APP_NAME="ibiki-sms"
-INSTALL_DIR="/opt/${APP_NAME}"
+DEPLOY_IN_PLACE="${DEPLOY_IN_PLACE:-true}"  # Deploy from current directory by default
+INSTALL_DIR="${INSTALL_DIR:-$(pwd)}"  # Use current directory if DEPLOY_IN_PLACE=true
 APP_USER="${APP_USER:-ibiki}"
 APP_PORT="${APP_PORT:-6000}"  # Using 6000 as default port
 DOMAIN="${DOMAIN:-_}"  # Default to catch-all (IP address access)
@@ -135,39 +136,50 @@ else
     log_info "User $APP_USER already exists"
 fi
 
-# Step 4: Copy application files
-log_info "Installing application to $INSTALL_DIR..."
-
-if [ -d "$INSTALL_DIR" ]; then
-    log_warn "Backing up existing installation..."
-    mv "$INSTALL_DIR" "${INSTALL_DIR}.backup.$(date +%s)"
+# Step 4: Prepare application directory
+if [ "$DEPLOY_IN_PLACE" = "true" ]; then
+    log_info "Deploying in place from $SCRIPT_DIR..."
+    INSTALL_DIR="$SCRIPT_DIR"
+    cd "$INSTALL_DIR"
+    
+    # Clean up unnecessary files
+    log_info "Cleaning up unnecessary files..."
+    rm -rf .git .cache attached_assets node_modules/.cache 2>/dev/null || true
+    
+    log_info "Using current directory: $INSTALL_DIR"
+else
+    log_info "Installing application to $INSTALL_DIR..."
+    
+    if [ -d "$INSTALL_DIR" ]; then
+        log_warn "Backing up existing installation..."
+        mv "$INSTALL_DIR" "${INSTALL_DIR}.backup.$(date +%s)"
+    fi
+    
+    mkdir -p "$INSTALL_DIR"
+    
+    # Copy all files from current directory to install directory
+    log_info "Copying files from $SCRIPT_DIR to $INSTALL_DIR..."
+    cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/" 2>/dev/null || {
+        log_error "Failed to copy files!"
+        exit 1
+    }
+    
+    # Also copy hidden files if they exist
+    cp -r "$SCRIPT_DIR"/.??* "$INSTALL_DIR/" 2>/dev/null || true
+    
+    cd "$INSTALL_DIR"
+    
+    # Remove unnecessary files to save space
+    rm -rf .git .cache attached_assets 2>/dev/null || true
+    
+    log_info "Files copied successfully"
 fi
 
-mkdir -p "$INSTALL_DIR"
-
-# Copy all files from current directory to install directory
-log_info "Copying files from $SCRIPT_DIR to $INSTALL_DIR..."
-cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/" 2>/dev/null || {
-    log_error "Failed to copy files!"
-    exit 1
-}
-
-# Also copy hidden files if they exist
-cp -r "$SCRIPT_DIR"/.??* "$INSTALL_DIR/" 2>/dev/null || true
-
-cd "$INSTALL_DIR"
-
-# Remove unnecessary files to save space
-rm -rf .git .cache attached_assets 2>/dev/null || true
-rm -f *.md 2>/dev/null || true
-
-# Verify critical files were copied
+# Verify critical files exist
 if [ ! -f "$INSTALL_DIR/package.json" ]; then
     log_error "Installation failed - package.json not found in $INSTALL_DIR"
     exit 1
 fi
-
-log_info "Files copied successfully"
 
 # Step 5: Create .env file
 if [ ! -f "$INSTALL_DIR/.env" ]; then
@@ -408,4 +420,9 @@ if [ "$SKIP_NGINX" != "true" ]; then
 fi
 echo ""
 echo "Configuration file: ${INSTALL_DIR}/.env"
+echo ""
+if [ "$DEPLOY_IN_PLACE" = "true" ]; then
+    echo "NOTE: Application deployed in place from: ${INSTALL_DIR}"
+    echo "To deploy to /opt instead, use: DEPLOY_IN_PLACE=false sudo ./deploy.sh"
+fi
 echo "================================="
