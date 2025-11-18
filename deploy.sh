@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# Yubin Dash - 1-Click Deployment Script
-# This script deploys the Yubin Dash SMS API middleware application to your server
+# Ibiki SMS - 1-Click Deployment Script
+# This script deploys the Ibiki SMS API middleware application to your server
 
 set -e  # Exit on any error
 
 echo "================================="
-echo "Yubin Dash Deployment Script"
+echo "Ibiki SMS Deployment Script"
 echo "================================="
 echo ""
 
 # Configuration
-APP_NAME="yubin-dash"
+APP_NAME="ibiki-sms"
 INSTALL_DIR="/opt/${APP_NAME}"
-APP_USER="${APP_USER:-yubin}"
+APP_USER="${APP_USER:-ibiki}"
 APP_PORT="${APP_PORT:-3100}"  # Using 3100 to avoid conflict with common port 3000
-DOMAIN="${DOMAIN:-api.yubindash.com}"
+DOMAIN="${DOMAIN:-api.ibikisms.com}"
 SKIP_NGINX="${SKIP_NGINX:-false}"  # Set to 'true' if you manage Nginx manually
 
 # Colors for output
@@ -104,7 +104,7 @@ if [ ! -f "$INSTALL_DIR/.env" ]; then
     JWT_SECRET=$(openssl rand -hex 32)
     
     cat > "$INSTALL_DIR/.env" << EOF
-# Yubin Dash Configuration
+# Ibiki SMS Configuration
 NODE_ENV=production
 PORT=${APP_PORT}
 HOST=0.0.0.0

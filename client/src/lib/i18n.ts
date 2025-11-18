@@ -3,7 +3,7 @@ export type Language = 'en' | 'zh';
 export const translations = {
   en: {
     // Landing Page
-    'landing.title': 'Professional SMS API Middleware',
+    'landing.title': 'Ibiki SMS',
     'landing.subtitle': 'Secure, scalable SMS gateway for your business needs',
     'landing.features.secure': 'Secure API Proxy',
     'landing.features.secureDesc': 'Hide your ExtremeSMS credentials from clients',
@@ -125,7 +125,7 @@ export const translations = {
   },
   zh: {
     // Landing Page
-    'landing.title': '专业短信API中间件',
+    'landing.title': 'Ibiki SMS',
     'landing.subtitle': '为您的业务需求提供安全、可扩展的短信网关',
     'landing.features.secure': '安全API代理',
     'landing.features.secureDesc': '向客户隐藏您的ExtremeSMS凭据',

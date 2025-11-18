@@ -1,4 +1,4 @@
-# Yubin Dash - SMS API Middleware
+# Ibiki SMS - API Middleware
 
 A professional SMS API middleware platform that provides a secure passthrough service to ExtremeSMS. Hide your ExtremeSMS credentials from clients while managing pricing, credits, and usage tracking with multilingual support (English/Chinese).
 
@@ -44,7 +44,7 @@ All endpoints mirror ExtremeSMS API with authentication:
 
 ### Authentication
 ```bash
-Authorization: Bearer YOUR_YUBIN_API_KEY
+Authorization: Bearer YOUR_IBIKI_API_KEY
 ```
 
 ### Endpoints
@@ -89,7 +89,7 @@ Configure ExtremeSMS and pricing via the admin panel at `/admin`:
 ## Project Structure
 
 ```
-yubin-dash/
+ibiki-sms/
 ├── client/                  # React frontend
 │   ├── src/
 │   │   ├── components/     # Reusable UI components
@@ -136,10 +136,10 @@ const axios = require('axios');
 
 // Send single SMS
 const response = await axios.post(
-  'https://api.yubindash.com/api/v2/sms/sendsingle',
+  'https://api.ibikisms.com/api/v2/sms/sendsingle',
   {
     recipient: '+1234567890',
-    message: 'Hello from Yubin Dash!'
+    message: 'Hello from Ibiki SMS!'
   },
   {
     headers: {
@@ -157,7 +157,7 @@ console.log(response.data);
 
 ```javascript
 const balance = await axios.get(
-  'https://api.yubindash.com/api/v2/account/balance',
+  'https://api.ibikisms.com/api/v2/account/balance',
   {
     headers: {
       'Authorization': 'Bearer ibk_live_your_api_key'
@@ -232,12 +232,12 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
 
 ### View Logs
 ```bash
-pm2 logs yubin-dash
+pm2 logs ibiki-sms
 ```
 
 ### Restart Application
 ```bash
-pm2 restart yubin-dash
+pm2 restart ibiki-sms
 ```
 
 ### Monitor Performance
@@ -253,7 +253,7 @@ pm2 status
 ## Troubleshooting
 
 ### Application Won't Start
-- Check logs: `pm2 logs yubin-dash`
+- Check logs: `pm2 logs ibiki-sms`
 - Verify .env file exists and is configured
 - Ensure port 3000 is available
 
@@ -284,7 +284,7 @@ Proprietary - All rights reserved
 ## Support
 
 For deployment assistance or issues:
-- Review logs in `/var/log/yubin-dash/`
+- Review logs in `/var/log/ibiki-sms/`
 - Check PM2 status: `pm2 status`
 - Verify Nginx configuration: `nginx -t`
 - See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed troubleshooting
