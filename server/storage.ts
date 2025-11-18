@@ -100,6 +100,8 @@ export class MemStorage implements IStorage {
       company: insertUser.company ?? null,
       role: isFirstUser ? "admin" : (insertUser.role ?? "client"),
       isActive: insertUser.isActive ?? true,
+      resetToken: null,
+      resetTokenExpiry: null,
       createdAt: new Date()
     };
     this.users.set(id, user);
