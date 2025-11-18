@@ -248,5 +248,5 @@ export const translations = {
 };
 
 export function translate(key: string, lang: Language): string {
-  return translations[lang][key] || key;
+  return (translations[lang] as Record<string, string>)[key] || key;
 }
