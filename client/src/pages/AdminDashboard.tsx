@@ -379,9 +379,9 @@ export default function AdminDashboard() {
         <TabsContent value="webhook" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>ExtremeSMS Webhook Configuration</CardTitle>
+              <CardTitle>Webhook Configuration (2-Way SMS)</CardTitle>
               <CardDescription>
-                Configure this webhook URL in your ExtremeSMS account to receive incoming messages
+                Configure this webhook URL in your SMS provider account to receive incoming messages
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -410,14 +410,14 @@ export default function AdminDashboard() {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Copy this URL and configure it in your ExtremeSMS dashboard under "Incoming Messages" webhook settings
+                  Copy this URL and configure it in your SMS provider dashboard under "Incoming Messages" or webhook settings
                 </p>
               </div>
 
               <div className="border-t pt-6 space-y-3">
                 <h3 className="text-base font-semibold">Setup Instructions</h3>
                 <ol className="space-y-2 text-sm list-decimal list-inside">
-                  <li>Login to your ExtremeSMS account</li>
+                  <li>Login to your SMS provider account</li>
                   <li>Navigate to Settings → Webhooks or Incoming Messages</li>
                   <li>Paste the webhook URL above</li>
                   <li>Select "POST" as the method</li>
@@ -434,7 +434,7 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium text-sm">Automatic Routing</p>
                       <p className="text-sm text-muted-foreground">
-                        When someone replies to your client's phone number, ExtremeSMS sends the message to this webhook. The system automatically routes it to the correct client based on their assigned phone numbers.
+                        When someone replies to your client's phone number, the SMS provider sends the message to this webhook. The system automatically routes it to the correct client based on their assigned phone numbers.
                       </p>
                     </div>
                   </div>
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
               <div className="border-t pt-6 space-y-3">
                 <h3 className="text-base font-semibold">Expected Payload Format</h3>
                 <p className="text-sm text-muted-foreground">
-                  ExtremeSMS will send POST requests with this structure:
+                  Your SMS provider will send POST requests with this structure:
                 </p>
                 <pre className="bg-muted rounded-lg p-4 text-xs font-mono overflow-x-auto">
 {`{
