@@ -218,24 +218,35 @@ log_info "Setting file permissions..."
 chown -R "$APP_USER:$APP_USER" "$INSTALL_DIR"
 chmod 600 "$INSTALL_DIR/.env"
 
-# Step 7: Install dependencies and build
+# Step 7: Configure npm for app user to use local directories
+log_info "Configuring npm to use local directories..."
+APP_HOME="$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR/.npm-cache" "$INSTALL_DIR/.npm-global" "$INSTALL_DIR/.npm-tmp"
+
+# Create .npmrc for app user pointing to local directories
+cat > "$INSTALL_DIR/.npmrc" << EOF
+prefix=$INSTALL_DIR/.npm-global
+cache=$INSTALL_DIR/.npm-cache
+tmp=$INSTALL_DIR/.npm-tmp
+EOF
+
+chown -R "$APP_USER:$APP_USER" "$INSTALL_DIR/.npm-cache" "$INSTALL_DIR/.npm-global" "$INSTALL_DIR/.npm-tmp" "$INSTALL_DIR/.npmrc"
+
+# Step 8: Install dependencies and build
 log_info "Installing dependencies..."
 cd "$INSTALL_DIR"
 
-# Set npm cache to local directory to avoid /opt permission issues
-export npm_config_cache="$INSTALL_DIR/.npm-cache"
-export npm_config_prefix="$INSTALL_DIR/.npm-global"
-
-sudo -u "$APP_USER" npm ci --production=false --cache="$INSTALL_DIR/.npm-cache"
+# Use env to preserve npm config through sudo
+sudo -u "$APP_USER" env HOME="$APP_HOME" npm_config_userconfig="$APP_HOME/.npmrc" npm_config_cache="$APP_HOME/.npm-cache" npm_config_prefix="$APP_HOME/.npm-global" npm ci --production=false
 
 log_info "Building application..."
 # Frontend build
 log_info "Building frontend with Vite..."
-sudo -u "$APP_USER" npm_config_cache="$INSTALL_DIR/.npm-cache" npx vite build
+sudo -u "$APP_USER" env HOME="$APP_HOME" npm_config_userconfig="$APP_HOME/.npmrc" npm_config_cache="$APP_HOME/.npm-cache" npm_config_prefix="$APP_HOME/.npm-global" npx vite build
 
 # Backend build with proper external exclusions
 log_info "Building backend with esbuild..."
-sudo -u "$APP_USER" npm_config_cache="$INSTALL_DIR/.npm-cache" npx esbuild server/index.ts \
+sudo -u "$APP_USER" env HOME="$APP_HOME" npm_config_userconfig="$APP_HOME/.npmrc" npm_config_cache="$APP_HOME/.npm-cache" npm_config_prefix="$APP_HOME/.npm-global" npx esbuild server/index.ts \
   --platform=node \
   --packages=external \
   --bundle \
@@ -260,16 +271,16 @@ log_info "Build successful!"
 log_info "  - Frontend: dist/client/"
 log_info "  - Backend: dist/index.js"
 
-# Step 8: Install PM2 globally if not present
+# Step 9: Install PM2 globally if not present
 log_info "Checking PM2 installation..."
 if ! command -v pm2 &> /dev/null; then
     log_info "Installing PM2..."
-    npm_config_cache="$INSTALL_DIR/.npm-cache" npm install -g pm2
+    npm install -g pm2
 else
     log_info "PM2 already installed, skipping..."
 fi
 
-# Step 9: Set up PM2 ecosystem file
+# Step 10: Set up PM2 ecosystem file
 log_info "Creating PM2 ecosystem configuration..."
 cat > "$INSTALL_DIR/ecosystem.config.cjs" << EOF
 module.exports = {
