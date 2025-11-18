@@ -172,11 +172,11 @@ export default function AdminDashboard() {
             title="ExtremeSMS Balance"
             value={
               balanceLoading ? "Loading..." : 
-              balanceError ? "Error" :
+              balanceError ? "Unavailable" :
               extremeBalance !== null ? `${balanceCurrency} ${extremeBalance.toLocaleString()}` : "N/A"
             }
             icon={Wallet}
-            description="Current account balance"
+            description={balanceError ? "Unable to fetch balance" : "Current account balance"}
           />
           <StatCard
             title={t('admin.stats.systemStatus')}

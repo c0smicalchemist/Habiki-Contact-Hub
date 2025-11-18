@@ -618,7 +618,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers: {
           "Authorization": `Bearer ${extremeApiKey.value}`,
           "Content-Type": "application/json"
-        }
+        },
+        validateStatus: (status) => status >= 200 && status < 300
       });
 
       if (response.data && response.data.success) {
@@ -628,13 +629,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currency: response.data.currency || 'USD'
         });
       } else {
-        res.status(400).json({ error: "ExtremeSMS API returned unexpected response" });
+        console.error("ExtremeSMS balance: unexpected response format");
+        res.status(400).json({ error: "Unable to fetch balance" });
       }
     } catch (error: any) {
-      console.error("ExtremeSMS balance fetch error:", error.response?.data || error.message);
+      const statusCode = error.response?.status || 'unknown';
+      console.error(`ExtremeSMS balance fetch failed with status ${statusCode}`);
       res.status(500).json({ 
-        error: "Failed to fetch balance from ExtremeSMS API",
-        details: error.response?.data?.message || error.message
+        error: "Unable to fetch balance"
       });
     }
   });
