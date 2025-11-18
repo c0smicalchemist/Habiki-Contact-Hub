@@ -1,0 +1,168 @@
+import { useState } from "react";
+import { Users, Settings, Activity } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import StatCard from "@/components/StatCard";
+
+export default function AdminDashboard() {
+  const [extremeApiKey, setExtremeApiKey] = useState("");
+
+  const clients = [
+    { id: 1, name: "Acme Corp", email: "admin@acme.com", apiKey: "ibk_live_abc...xyz", status: "active", messagesSent: 1250, lastActive: "2 hours ago" },
+    { id: 2, name: "TechStart Inc", email: "dev@techstart.com", apiKey: "ibk_live_def...uvw", status: "active", messagesSent: 850, lastActive: "1 day ago" },
+    { id: 3, name: "Global Services", email: "api@global.com", apiKey: "ibk_live_ghi...rst", status: "inactive", messagesSent: 320, lastActive: "1 week ago" }
+  ];
+
+  const handleSaveConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Saving ExtremeSMS API key:", extremeApiKey);
+  };
+
+  return (
+    <div className="p-6 space-y-8">
+      <div>
+        <h1 className="text-4xl font-bold tracking-tight">Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Manage clients and system configuration</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Clients"
+          value={clients.length}
+          icon={Users}
+          description="Active accounts"
+        />
+        <StatCard
+          title="Total Messages"
+          value="2,420"
+          icon={Activity}
+          description="Last 30 days"
+        />
+        <StatCard
+          title="System Status"
+          value="Healthy"
+          icon={Settings}
+          description="All services running"
+        />
+      </div>
+
+      <Tabs defaultValue="clients" data-testid="tabs-admin">
+        <TabsList>
+          <TabsTrigger value="clients" data-testid="tab-clients">Clients</TabsTrigger>
+          <TabsTrigger value="configuration" data-testid="tab-configuration">Configuration</TabsTrigger>
+          <TabsTrigger value="monitoring" data-testid="tab-monitoring">Monitoring</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="clients" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Client Management</CardTitle>
+              <CardDescription>View and manage all connected clients</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>API Key</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Messages Sent</TableHead>
+                    <TableHead>Last Active</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clients.map((client) => (
+                    <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
+                      <TableCell className="font-medium">{client.name}</TableCell>
+                      <TableCell>{client.email}</TableCell>
+                      <TableCell className="font-mono text-sm">{client.apiKey}</TableCell>
+                      <TableCell>
+                        <Badge variant={client.status === "active" ? "default" : "secondary"}>
+                          {client.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{client.messagesSent.toLocaleString()}</TableCell>
+                      <TableCell className="text-muted-foreground">{client.lastActive}</TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="ghost" data-testid={`button-view-${client.id}`}>
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="configuration" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>ExtremeSMS Configuration</CardTitle>
+              <CardDescription>
+                Configure the connection to ExtremeSMS API. Changes will affect all clients.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSaveConfig} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="extremeApiKey">ExtremeSMS API Key</Label>
+                  <Input
+                    id="extremeApiKey"
+                    type="password"
+                    placeholder="Enter ExtremeSMS API key"
+                    value={extremeApiKey}
+                    onChange={(e) => setExtremeApiKey(e.target.value)}
+                    data-testid="input-extreme-api-key"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This key is used to authenticate with ExtremeSMS on behalf of all clients
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button type="submit" data-testid="button-save-config">
+                    Save Configuration
+                  </Button>
+                  <Button type="button" variant="outline" data-testid="button-test-connection">
+                    Test Connection
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="monitoring" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent API Activity</CardTitle>
+              <CardDescription>Monitor real-time API requests and responses</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <div key={item} className="flex items-center justify-between p-3 rounded-lg border border-border" data-testid={`activity-${item}`}>
+                    <div>
+                      <p className="text-sm font-medium">POST /api/v2/sms/sendsingle</p>
+                      <p className="text-xs text-muted-foreground">Client: Acme Corp • 2 minutes ago</p>
+                    </div>
+                    <Badge className="bg-green-500/10 text-green-600 dark:text-green-400">200 OK</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
