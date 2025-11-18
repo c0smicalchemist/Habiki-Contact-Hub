@@ -4,6 +4,14 @@
 
 Ibiki SMS is a professional SMS API middleware platform that acts as a secure passthrough service to ExtremeSMS. It enables users to hide their ExtremeSMS credentials from clients while managing pricing, credits, and usage tracking. The platform provides a multi-client API key system with individual credit balances, usage monitoring, and a complete admin dashboard for system configuration and client management.
 
+## Recent Changes (November 18, 2025)
+
+1. **Multilingual Support**: Implemented English/Chinese language toggle throughout the application
+2. **Add Credits Security**: Restricted add-credits endpoint to admin-only with requireAdmin middleware
+3. **Navigation Improvements**: Added back buttons to all dashboard pages (Client Dashboard, Admin Dashboard, API Docs)
+4. **API Key Security**: API keys displayed in masked format (prefix...suffix) after creation - full key only shown once during signup
+5. **Credit Transaction Tracking**: All credit additions are logged with balanceBefore/balanceAfter for audit trail
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -31,11 +39,18 @@ Preferred communication style: Simple, everyday language.
 **Routing**: Wouter for client-side routing with role-based access control
 
 **Key Pages**:
-- Landing page (public marketing)
-- Signup/Login (authentication)
-- Client Dashboard (usage stats, API keys, message logs)
-- Admin Dashboard (system config, client management)
-- API Documentation (interactive endpoint reference)
+- Landing page (public marketing with language toggle)
+- Signup/Login (authentication with multilingual support)
+- Client Dashboard (usage stats, masked API keys, message logs, add credits button)
+- Admin Dashboard (system config, client management, ExtremeSMS configuration)
+- API Documentation (interactive endpoint reference with back navigation)
+
+**Internationalization**:
+- Dual-language support (English and Chinese)
+- LanguageContext provider for centralized translation management
+- LanguageToggle component in navigation header
+- Language preference persisted in localStorage
+- Translation keys organized by feature area in client/src/lib/i18n.ts
 
 ### Backend Architecture
 
@@ -64,8 +79,17 @@ Preferred communication style: Simple, everyday language.
 
 **Session Management**: 
 - Stateless JWT tokens (no server-side sessions)
-- API keys stored as hashed values for security
+- API keys stored as SHA-256 hashed values for security
+- API keys displayed as masked format (prefix...suffix) after creation
+- Full plaintext API key only shown once during signup for security
 - Tokens include userId and role claims
+
+**Credit Management**:
+- Admin-only credit addition via POST /api/admin/add-credits
+- requireAdmin middleware enforces role-based access control
+- Credit transactions logged with balanceBefore and balanceAfter
+- Client "Add Credits" button shows contact admin notification
+- All credit changes tracked in creditTransactions table
 
 ### Data Storage
 
