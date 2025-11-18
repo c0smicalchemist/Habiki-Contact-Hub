@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Settings, Activity, ArrowLeft, Wallet } from "lucide-react";
+import { Users, Settings, Activity, ArrowLeft, Wallet, Copy, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -214,6 +214,7 @@ export default function AdminDashboard() {
           <TabsList>
             <TabsTrigger value="clients" data-testid="tab-clients">{t('admin.tabs.clients')}</TabsTrigger>
             <TabsTrigger value="configuration" data-testid="tab-configuration">{t('admin.tabs.configuration')}</TabsTrigger>
+            <TabsTrigger value="webhook" data-testid="tab-webhook">Webhook Setup</TabsTrigger>
             <TabsTrigger value="testing" data-testid="tab-testing">API Testing</TabsTrigger>
             <TabsTrigger value="logs" data-testid="tab-logs">Error Logs</TabsTrigger>
             <TabsTrigger value="monitoring" data-testid="tab-monitoring">{t('admin.tabs.monitoring')}</TabsTrigger>
@@ -371,6 +372,126 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="webhook" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>ExtremeSMS Webhook Configuration</CardTitle>
+              <CardDescription>
+                Configure this webhook URL in your ExtremeSMS account to receive incoming messages
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Webhook URL</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value="http://151.243.109.79/webhook/incoming-sms"
+                    readOnly
+                    className="font-mono text-sm"
+                    data-testid="input-webhook-url"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText("http://151.243.109.79/webhook/incoming-sms");
+                      toast({
+                        title: "Copied!",
+                        description: "Webhook URL copied to clipboard"
+                      });
+                    }}
+                    data-testid="button-copy-webhook"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Copy this URL and configure it in your ExtremeSMS dashboard under "Incoming Messages" webhook settings
+                </p>
+              </div>
+
+              <div className="border-t pt-6 space-y-3">
+                <h3 className="text-base font-semibold">Setup Instructions</h3>
+                <ol className="space-y-2 text-sm list-decimal list-inside">
+                  <li>Login to your ExtremeSMS account</li>
+                  <li>Navigate to Settings → Webhooks or Incoming Messages</li>
+                  <li>Paste the webhook URL above</li>
+                  <li>Select "POST" as the method</li>
+                  <li>Save the configuration</li>
+                  <li>Test by sending an SMS to one of your numbers</li>
+                </ol>
+              </div>
+
+              <div className="border-t pt-6 space-y-3">
+                <h3 className="text-base font-semibold">How It Works</h3>
+                <div className="bg-muted rounded-lg p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">Automatic Routing</p>
+                      <p className="text-sm text-muted-foreground">
+                        When someone replies to your client's phone number, ExtremeSMS sends the message to this webhook. The system automatically routes it to the correct client based on their assigned phone numbers.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">Multiple Numbers Support</p>
+                      <p className="text-sm text-muted-foreground">
+                        Each client can have multiple phone numbers assigned. ALL replies to ANY of their numbers will be delivered to their inbox.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">Client Dashboard</p>
+                      <p className="text-sm text-muted-foreground">
+                        Clients see incoming messages in their dashboard with auto-refresh every 5 seconds. No technical setup required on their end.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-6 space-y-3">
+                <h3 className="text-base font-semibold">Expected Payload Format</h3>
+                <p className="text-sm text-muted-foreground">
+                  ExtremeSMS will send POST requests with this structure:
+                </p>
+                <pre className="bg-muted rounded-lg p-4 text-xs font-mono overflow-x-auto">
+{`{
+  "from": "+1234567890",
+  "firstname": "John",
+  "lastname": "Doe",
+  "business": "ABC Company",
+  "message": "Reply message text",
+  "status": "received",
+  "matchedBlockWord": null,
+  "receiver": "+1987654321",
+  "usedmodem": "modem_id",
+  "port": "port_number",
+  "timestamp": "2025-11-18T10:30:00.000Z",
+  "messageId": "unique_msg_id"
+}`}
+                </pre>
+              </div>
+
+              <div className="border-t pt-6">
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    ⚠️ Important: Assign Phone Numbers
+                  </p>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Make sure to assign phone numbers to your clients in the "Client Management" tab. Messages will only be routed if the receiver number matches a client's assigned numbers.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
