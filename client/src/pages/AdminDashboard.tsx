@@ -57,11 +57,11 @@ export default function AdminDashboard() {
     }
   });
 
-  const clients = [
-    { id: 1, name: "Acme Corp", email: "admin@acme.com", apiKey: "ibk_live_abc...xyz", status: "active", messagesSent: 1250, lastActive: "2 hours ago" },
-    { id: 2, name: "TechStart Inc", email: "dev@techstart.com", apiKey: "ibk_live_def...uvw", status: "active", messagesSent: 850, lastActive: "1 day ago" },
-    { id: 3, name: "Global Services", email: "api@global.com", apiKey: "ibk_live_ghi...rst", status: "inactive", messagesSent: 320, lastActive: "1 week ago" }
-  ];
+  const { data: clientsData } = useQuery({
+    queryKey: ['/api/admin/clients']
+  });
+
+  const clients = clientsData?.clients || [];
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();

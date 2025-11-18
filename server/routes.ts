@@ -301,6 +301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currency: profile?.currency || "USD",
         apiKeys: apiKeys.map(key => ({
           id: key.id,
+          key: key.key,  // Full API key for display on client dashboard
           displayKey: `${key.keyPrefix}...${key.keySuffix}`,
           isActive: key.isActive,
           createdAt: key.createdAt,
@@ -331,9 +332,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all clients
   app.get("/api/admin/clients", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      // This would need to be implemented properly to get all clients
-      res.json({ success: true, clients: [] });
+      const allUsers = await storage.getAllUsers();
+      const clients = await Promise.all(
+        allUsers
+          .filter(user => user.role === 'client')
+          .map(async (user) => {
+            const apiKeys = await storage.getApiKeysByUserId(user.id);
+            const messageLogs = await storage.getMessageLogsByClientId(user.id);
+            const displayKey = apiKeys[0] ? `ibk_live_${apiKeys[0].keyPrefix}...${apiKeys[0].keySuffix}` : 'No key';
+            
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              apiKey: displayKey,
+              status: apiKeys.length > 0 && apiKeys[0].isActive ? 'active' : 'inactive',
+              messagesSent: messageLogs.length,
+              lastActive: apiKeys[0]?.lastUsedAt 
+                ? new Date(apiKeys[0].lastUsedAt).toLocaleDateString()
+                : 'Never'
+            };
+          })
+      );
+      
+      res.json({ success: true, clients });
     } catch (error) {
+      console.error("Admin clients fetch error:", error);
       res.status(500).json({ error: "Failed to fetch clients" });
     }
   });

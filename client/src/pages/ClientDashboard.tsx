@@ -76,9 +76,9 @@ export default function ClientDashboard() {
 
         {firstApiKey && (
           <ApiKeyDisplay 
-            apiKey={firstApiKey.displayKey}
+            apiKey={firstApiKey.key}
             title={t('dashboard.apiKey.title')}
-            description="Your API key was shown in full once at signup. This is the display format showing prefix and suffix only. Store your full key securely."
+            description="⚠️ Keep this key secure! Anyone with this key can send SMS using your credits. Copy it and store it safely."
           />
         )}
 
