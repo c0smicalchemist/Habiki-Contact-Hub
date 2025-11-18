@@ -95,7 +95,7 @@ fi
 
 log_info "Port ${APP_PORT} is available"
 
-# Step 2: Install Node.js if not present
+# Step 2: Install Node.js 20+ (REQUIRED)
 log_info "Checking Node.js installation..."
 if ! command -v node &> /dev/null; then
     log_info "Installing Node.js 20..."
@@ -104,14 +104,27 @@ if ! command -v node &> /dev/null; then
     log_info "Node.js installed: $(node --version)"
 else
     NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
-    if [ "$NODE_VERSION" -lt 18 ]; then
-        log_warn "Node.js version is too old. Installing Node.js 20..."
+    if [ "$NODE_VERSION" -lt 20 ]; then
+        log_warn "Node.js $NODE_VERSION detected. Upgrading to Node.js 20 (REQUIRED)..."
+        # Remove old version
+        apt-get remove -y nodejs || true
+        # Install Node.js 20
         curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
         apt-get install -y nodejs
+        log_info "Node.js upgraded to: $(node --version)"
     else
         log_info "Node.js already installed: $(node --version)"
     fi
 fi
+
+# Verify Node.js 20+
+NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VERSION" -lt 20 ]; then
+    log_error "Node.js 20+ is required, but version $(node --version) is installed"
+    log_error "Please install Node.js 20 manually and try again"
+    exit 1
+fi
+log_info "Node.js version verified: $(node --version)"
 
 # Step 3: Create application user
 log_info "Setting up application user..."
