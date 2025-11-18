@@ -309,23 +309,28 @@ chown "$APP_USER:$APP_USER" "/var/log/${APP_NAME}"
 
 # Step 10: Start application with PM2
 log_info "Starting application with PM2..."
-sudo -u "$APP_USER" pm2 delete "$APP_NAME" 2>/dev/null || true
-sudo -u "$APP_USER" pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
+# Set PM2_HOME to user's home directory to avoid permission issues
+PM2_HOME="/home/$APP_USER/.pm2"
+mkdir -p "$PM2_HOME"
+chown -R "$APP_USER:$APP_USER" "$PM2_HOME"
+
+sudo -u "$APP_USER" env PM2_HOME="$PM2_HOME" pm2 delete "$APP_NAME" 2>/dev/null || true
+sudo -u "$APP_USER" env PM2_HOME="$PM2_HOME" pm2 start "$INSTALL_DIR/ecosystem.config.cjs"
 
 # Set up PM2 to start on boot
 log_info "Configuring PM2 startup..."
 pm2 startup systemd -u "$APP_USER" --hp "/home/$APP_USER" 2>/dev/null || true
-sudo -u "$APP_USER" pm2 save
+sudo -u "$APP_USER" env PM2_HOME="$PM2_HOME" pm2 save
 
 # Wait a moment for PM2 to start the app
 sleep 2
 
 # Check if app is running
-if sudo -u "$APP_USER" pm2 list | grep -q "$APP_NAME.*online"; then
+if sudo -u "$APP_USER" env PM2_HOME="$PM2_HOME" pm2 list | grep -q "$APP_NAME.*online"; then
     log_info "Application started successfully!"
 else
     log_error "Application failed to start!"
-    log_error "Check logs with: pm2 logs $APP_NAME"
+    log_error "Check logs with: PM2_HOME=/home/$APP_USER/.pm2 pm2 logs $APP_NAME"
     exit 1
 fi
 
