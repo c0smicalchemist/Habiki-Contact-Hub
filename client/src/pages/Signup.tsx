@@ -17,11 +17,12 @@ export default function Signup() {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     email: "",
-    password: ""
+    password: "",
+    confirmPassword: ""
   });
 
   const signupMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: { email: string; password: string }) => {
       return await apiRequest('/api/auth/signup', {
         method: 'POST',
         body: JSON.stringify(data)
@@ -46,7 +47,15 @@ export default function Signup() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    signupMutation.mutate(formData);
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+    signupMutation.mutate({ email: formData.email, password: formData.password });
   };
 
   return (
@@ -87,6 +96,18 @@ export default function Signup() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   data-testid="input-password"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">{t('auth.signup.confirmPassword')}</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  data-testid="input-confirm-password"
                   required
                 />
               </div>
