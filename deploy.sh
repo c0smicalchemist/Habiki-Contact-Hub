@@ -257,8 +257,8 @@ sudo -u "$APP_USER" env HOME="$APP_HOME" npm_config_userconfig="$APP_HOME/.npmrc
   --outdir=dist
 
 # Verify builds
-if [ ! -d "$INSTALL_DIR/dist/client" ]; then
-    log_error "Frontend build failed - dist/client not found"
+if [ ! -d "$INSTALL_DIR/dist/public" ]; then
+    log_error "Frontend build failed - dist/public not found"
     exit 1
 fi
 
@@ -268,7 +268,7 @@ if [ ! -f "$INSTALL_DIR/dist/index.js" ]; then
 fi
 
 log_info "Build successful!"
-log_info "  - Frontend: dist/client/"
+log_info "  - Frontend: dist/public/"
 log_info "  - Backend: dist/index.js"
 
 # Step 9: Install PM2 globally if not present
