@@ -491,6 +491,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const profile = await storage.getClientProfileByUserId(user.id);
       const apiKeys = await storage.getApiKeysByUserId(user.id);
+      
+      // Get client rate per SMS from system config
+      const clientRateConfig = await storage.getSystemConfig("client_rate_per_sms");
+      const clientRate = clientRateConfig?.value || "0.02";
 
       res.json({
         success: true,
@@ -503,6 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         credits: profile?.credits || "0.00",
         currency: profile?.currency || "USD",
+        ratePerSms: clientRate,
         apiKeys: apiKeys.map(key => ({
           id: key.id,
           displayKey: `${key.keyPrefix}...${key.keySuffix}`,

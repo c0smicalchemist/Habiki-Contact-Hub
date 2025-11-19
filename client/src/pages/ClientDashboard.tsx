@@ -16,6 +16,7 @@ export default function ClientDashboard() {
     user: { id: string; email: string; name: string; company: string | null; role: string };
     credits: string;
     currency: string;
+    ratePerSms: string;
     apiKeys: Array<{ id: string; displayKey: string; isActive: boolean; createdAt: string; lastUsedAt: string | null }>;
   }>({
     queryKey: ['/api/client/profile']
@@ -46,6 +47,7 @@ export default function ClientDashboard() {
   });
 
   const credits = profile?.credits || "0.00";
+  const ratePerSms = profile?.ratePerSms || "0.02";
   const messageCount = messages?.messages?.length || 0;
   const inboxCount = incomingMessages?.count || 0;
   const apiKeys = profile?.apiKeys || [];
@@ -106,6 +108,43 @@ export default function ClientDashboard() {
             description={t('dashboard.stats.operational')}
           />
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pricing Information</CardTitle>
+            <CardDescription>
+              Your SMS pricing details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted/50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Rate per SMS</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cost charged for each SMS message sent
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold" data-testid="text-rate-per-sms">
+                    ${parseFloat(ratePerSms).toFixed(4)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">per message</p>
+                </div>
+              </div>
+              {parseFloat(credits) > 0 && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Approximate messages available:</span>
+                    <span className="font-semibold" data-testid="text-messages-available">
+                      ~{Math.floor(parseFloat(credits) / parseFloat(ratePerSms)).toLocaleString()} messages
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <ApiKeysManagement apiKeys={apiKeys} />
 
