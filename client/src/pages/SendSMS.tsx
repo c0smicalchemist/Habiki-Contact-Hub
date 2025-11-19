@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Send, Users, List, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { ClientSelector } from "@/components/ClientSelector";
+import { DashboardHeader } from "@/components/DashboardHeader";
 
 interface Contact {
   id: string;
@@ -29,6 +31,18 @@ interface ContactGroup {
 export default function SendSMS() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("single");
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(() => {
+    return localStorage.getItem('selectedClientId');
+  });
+
+  // Store selected client in localStorage
+  useEffect(() => {
+    if (selectedClientId) {
+      localStorage.setItem('selectedClientId', selectedClientId);
+    } else {
+      localStorage.removeItem('selectedClientId');
+    }
+  }, [selectedClientId]);
 
   // Single SMS state
   const [singleTo, setSingleTo] = useState("");
@@ -44,13 +58,39 @@ export default function SendSMS() {
     { to: "", message: "" }
   ]);
 
+  // Fetch current user profile
+  const { data: profile } = useQuery<{
+    user: { id: string; email: string; name: string; company: string | null; role: string };
+  }>({
+    queryKey: ['/api/client/profile']
+  });
+
+  const isAdmin = profile?.user?.role === 'admin';
+  const effectiveUserId = isAdmin && selectedClientId ? selectedClientId : undefined;
+
   // Fetch contacts and groups
   const { data: contactsData } = useQuery({
-    queryKey: ["/api/contacts"],
+    queryKey: ["/api/contacts", effectiveUserId],
+    queryFn: async () => {
+      const url = effectiveUserId 
+        ? `/api/contacts?userId=${effectiveUserId}`
+        : '/api/contacts';
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch contacts');
+      return response.json();
+    }
   });
 
   const { data: groupsData } = useQuery({
-    queryKey: ["/api/contact-groups"],
+    queryKey: ["/api/contact-groups", effectiveUserId],
+    queryFn: async () => {
+      const url = effectiveUserId 
+        ? `/api/contact-groups?userId=${effectiveUserId}`
+        : '/api/contact-groups';
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch groups');
+      return response.json();
+    }
   });
 
   const contacts: Contact[] = (contactsData as any)?.contacts || [];
@@ -169,18 +209,35 @@ export default function SendSMS() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6 flex items-center gap-4">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="icon" data-testid="button-back">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold">Send SMS</h1>
-          <p className="text-muted-foreground">Send single or bulk SMS messages to your contacts</p>
+    <div className="min-h-screen bg-background">
+      <DashboardHeader />
+      <div className="container mx-auto p-6 space-y-6">
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Mode</CardTitle>
+              <CardDescription>Select which client to send SMS on behalf of</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ClientSelector 
+                selectedClientId={selectedClientId}
+                onClientChange={setSelectedClientId}
+              />
+            </CardContent>
+          </Card>
+        )}
+        
+        <div className="mb-6 flex items-center gap-4">
+          <Link href={isAdmin ? "/admin" : "/dashboard"}>
+            <Button variant="ghost" size="icon" data-testid="button-back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Send SMS</h1>
+            <p className="text-muted-foreground">Send single or bulk SMS messages to your contacts</p>
+          </div>
         </div>
-      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -384,6 +441,7 @@ export default function SendSMS() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
