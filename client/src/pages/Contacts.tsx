@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,8 @@ import { Users, UserPlus, Upload, Trash2, Edit, FolderPlus, Folder, ArrowLeft, D
 import { Link } from "wouter";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ClientSelector } from "@/components/ClientSelector";
+import { DashboardHeader } from "@/components/DashboardHeader";
 
 interface Contact {
   id: string;
@@ -55,15 +57,53 @@ export default function Contacts() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [importStep, setImportStep] = useState(1);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(() => {
+    return localStorage.getItem('selectedClientId');
+  });
+
+  // Store selected client in localStorage
+  useEffect(() => {
+    if (selectedClientId) {
+      localStorage.setItem('selectedClientId', selectedClientId);
+    } else {
+      localStorage.removeItem('selectedClientId');
+    }
+  }, [selectedClientId]);
+
+  // Fetch current user profile
+  const { data: profile } = useQuery<{
+    user: { id: string; email: string; name: string; company: string | null; role: string };
+  }>({
+    queryKey: ['/api/client/profile']
+  });
+
+  const isAdmin = profile?.user?.role === 'admin';
+  const effectiveUserId = isAdmin && selectedClientId ? selectedClientId : undefined;
 
   // Fetch contact groups
   const { data: groupsData } = useQuery({
-    queryKey: ["/api/contact-groups"],
+    queryKey: ["/api/contact-groups", effectiveUserId],
+    queryFn: async () => {
+      const url = effectiveUserId 
+        ? `/api/contact-groups?userId=${effectiveUserId}`
+        : '/api/contact-groups';
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch groups');
+      return response.json();
+    }
   });
 
   // Fetch contacts
   const { data: contactsData } = useQuery({
-    queryKey: ["/api/contacts"],
+    queryKey: ["/api/contacts", effectiveUserId],
+    queryFn: async () => {
+      const url = effectiveUserId 
+        ? `/api/contacts?userId=${effectiveUserId}`
+        : '/api/contacts';
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch contacts');
+      return response.json();
+    }
   });
 
   const groups: ContactGroup[] = (groupsData as any)?.groups || [];
@@ -72,13 +112,14 @@ export default function Contacts() {
   // Create group mutation
   const createGroupMutation = useMutation({
     mutationFn: async (data: { name: string; description: string; businessUnitPrefix?: string }) => {
+      const payload = effectiveUserId ? { ...data, userId: effectiveUserId } : data;
       return await apiRequest('/api/contact-groups', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/contact-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/contact-groups', effectiveUserId] });
       toast({ title: "Success", description: "Contact group created" });
       setShowGroupDialog(false);
       setGroupName("");
@@ -93,13 +134,14 @@ export default function Contacts() {
   // Create contact mutation
   const createContactMutation = useMutation({
     mutationFn: async (data: typeof contactData) => {
+      const payload = effectiveUserId ? { ...data, userId: effectiveUserId } : data;
       return await apiRequest('/api/contacts', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/contacts', effectiveUserId] });
       toast({ title: "Success", description: "Contact created" });
       setShowContactDialog(false);
       setContactData({ phoneNumber: "", name: "", email: "", notes: "", groupId: "" });
@@ -112,13 +154,14 @@ export default function Contacts() {
   // Import contacts mutation
   const importContactsMutation = useMutation({
     mutationFn: async (data: { contacts: any[]; groupId: string | null }) => {
+      const payload = effectiveUserId ? { ...data, userId: effectiveUserId } : data;
       return await apiRequest('/api/contacts/import-csv', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/contacts', effectiveUserId] });
       toast({ title: "Success", description: `Imported ${data.count} contacts` });
       setShowImportDialog(false);
       setCsvFile(null);
@@ -212,20 +255,37 @@ export default function Contacts() {
     : contacts;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold">Contacts</h1>
-            <p className="text-muted-foreground">Manage your contact list and groups</p>
+    <div className="min-h-screen bg-background">
+      <DashboardHeader />
+      <div className="container mx-auto p-6 space-y-6">
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Mode</CardTitle>
+              <CardDescription>Select which client's contacts to manage</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ClientSelector 
+                selectedClientId={selectedClientId}
+                onClientChange={setSelectedClientId}
+              />
+            </CardContent>
+          </Card>
+        )}
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href={isAdmin ? "/admin" : "/dashboard"}>
+              <Button variant="ghost" size="icon" data-testid="button-back">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold">Contacts</h1>
+              <p className="text-muted-foreground">Manage your contact list and groups</p>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
+          <div className="flex gap-2">
           <Dialog open={showGroupDialog} onOpenChange={setShowGroupDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" data-testid="button-create-group">
@@ -453,6 +513,7 @@ export default function Contacts() {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
