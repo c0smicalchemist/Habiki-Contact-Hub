@@ -73,10 +73,10 @@ echo ""
 echo "Step 3: Creating database and user..."
 echo "--------------------------------------"
 
-# Generate secure random password
-DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-32)
+# Database credentials (configured for deployment)
+DB_PASSWORD="c0smic4382"
 DB_NAME="ibiki_sms"
-DB_USER="ibiki_user"
+DB_USER="admin"
 
 # Create database and user
 sudo -u postgres psql << EOF > /dev/null 2>&1
