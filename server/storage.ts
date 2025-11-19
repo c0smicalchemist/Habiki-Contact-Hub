@@ -68,6 +68,7 @@ export interface IStorage {
   getMessageLogsByUserId(userId: string, limit?: number): Promise<MessageLog[]>;
   getMessageLogByMessageId(messageId: string): Promise<MessageLog | undefined>;
   getAllMessageLogs(limit?: number): Promise<MessageLog[]>;
+  updateMessageStatus(logId: string, status: string): Promise<void>;
   findClientBySenderPhone(senderPhone: string): Promise<string | undefined>; // Find userId by sender phone number
   findClientByRecipient(recipientPhone: string): Promise<string | undefined>; // Find userId who sent to this recipient
   
@@ -367,6 +368,14 @@ export class MemStorage implements IStorage {
     const logs = Array.from(this.messageLogs.values())
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return limit ? logs.slice(0, limit) : logs;
+  }
+
+  async updateMessageStatus(logId: string, status: string): Promise<void> {
+    const log = this.messageLogs.get(logId);
+    if (log) {
+      log.status = status;
+      this.messageLogs.set(logId, log);
+    }
   }
 
   async findClientBySenderPhone(senderPhone: string): Promise<string | undefined> {
@@ -785,6 +794,12 @@ export class DbStorage implements IStorage {
     }
     
     return query;
+  }
+
+  async updateMessageStatus(logId: string, status: string): Promise<void> {
+    await this.db.update(messageLogs)
+      .set({ status })
+      .where(eq(messageLogs.id, logId));
   }
 
   async findClientBySenderPhone(senderPhone: string): Promise<string | undefined> {

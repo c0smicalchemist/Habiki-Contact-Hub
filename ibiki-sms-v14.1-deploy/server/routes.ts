@@ -1379,10 +1379,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check single message status by ID
+  // Check single message status by ID (Dashboard - JWT Auth)
+  app.get("/api/dashboard/sms/status/:messageId", authenticateToken, async (req: any, res) => {
+    try {
+      const { messageId } = req.params;
+      
+      // Find the message in our database
+      const messageLog = await storage.getMessageLogByMessageId(messageId);
+      
+      if (!messageLog) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Message not found" 
+        });
+      }
+      
+      // Check ownership (clients can only check their own messages, admins can check any)
+      if (req.user.role !== 'admin' && messageLog.userId !== req.user.userId) {
+        return res.status(403).json({ 
+          success: false, 
+          error: "Access denied" 
+        });
+      }
+      
+      // Fetch latest status from ExtremeSMS
+      const extremeApiKey = await getExtremeApiKey();
+      
+      try {
+        const response = await axios.get(
+          `${EXTREMESMS_BASE_URL}/api/v2/sms/status/${messageId}`,
+          {
+            headers: {
+              "Authorization": `Bearer ${extremeApiKey}`
+            }
+          }
+        );
+
+        // Update our database with the latest status
+        if (response.data.status && response.data.status !== messageLog.status) {
+          await storage.updateMessageStatus(messageLog.id, response.data.status);
+        }
+
+        res.json({
+          success: true,
+          messageId: response.data.messageId,
+          status: response.data.status,
+          statusDescription: response.data.statusDescription || response.data.status
+        });
+      } catch (extremeError: any) {
+        // If ExtremeSMS fails, return our local status
+        console.error("ExtremeSMS status check failed, using local status:", extremeError.message);
+        res.json({
+          success: true,
+          messageId: messageLog.messageId,
+          status: messageLog.status,
+          statusDescription: messageLog.status + " (cached)"
+        });
+      }
+    } catch (error: any) {
+      console.error("Dashboard status check error:", error);
+      res.status(500).json({ success: false, error: "Failed to check status" });
+    }
+  });
+
+  // Check single message status by ID (API - API Key Auth)
   app.get("/api/v2/sms/status/:messageId", authenticateApiKey, async (req: any, res) => {
     try {
       const { messageId } = req.params;
+      
+      // Find the message in our database
+      const messageLog = await storage.getMessageLogByMessageId(messageId);
+      
+      if (!messageLog) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Message not found" 
+        });
+      }
+      
+      // Check ownership
+      if (messageLog.userId !== req.user.userId) {
+        return res.status(403).json({ 
+          success: false, 
+          error: "Access denied" 
+        });
+      }
+      
       const extremeApiKey = await getExtremeApiKey();
       
       const response = await axios.get(
@@ -1393,6 +1475,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       );
+
+      // Update our database with the latest status
+      if (response.data.status && response.data.status !== messageLog.status) {
+        await storage.updateMessageStatus(messageLog.id, response.data.status);
+      }
 
       res.json(response.data);
     } catch (error: any) {
