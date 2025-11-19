@@ -16,6 +16,7 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { Link } from "wouter";
 import ApiTestUtility from "@/components/ApiTestUtility";
 import ErrorLogsViewer from "@/components/ErrorLogsViewer";
+import { AddCreditsToClientDialog } from "@/components/AddCreditsToClientDialog";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -90,6 +91,7 @@ export default function AdminDashboard() {
     apiKey: string;
     status: string;
     messagesSent: number;
+    credits: string;
     lastActive: string;
     assignedPhoneNumbers: string[];
   }> }>({
@@ -235,8 +237,10 @@ export default function AdminDashboard() {
                     <TableHead>API Key</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Messages Sent</TableHead>
+                    <TableHead>Credits</TableHead>
                     <TableHead>Assigned Numbers</TableHead>
                     <TableHead>Last Active</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -251,6 +255,11 @@ export default function AdminDashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell>{client.messagesSent.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <span className="font-mono font-semibold" data-testid={`text-credits-${client.id}`}>
+                          ${parseFloat(client.credits).toFixed(2)}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <Input
                           type="text"
@@ -272,6 +281,13 @@ export default function AdminDashboard() {
                         />
                       </TableCell>
                       <TableCell className="text-muted-foreground">{client.lastActive}</TableCell>
+                      <TableCell>
+                        <AddCreditsToClientDialog 
+                          clientId={client.id}
+                          clientName={client.name}
+                          currentCredits={client.credits}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
