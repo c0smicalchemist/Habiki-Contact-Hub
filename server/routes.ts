@@ -819,6 +819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               apiKey: displayKey,
               status: apiKeys.length > 0 && apiKeys[0].isActive ? 'active' : 'inactive',
               messagesSent: messageLogs.length,
+              credits: profile?.credits || "0.00",
               lastActive: apiKeys[0]?.lastUsedAt 
                 ? new Date(apiKeys[0].lastUsedAt).toLocaleDateString()
                 : 'Never',
