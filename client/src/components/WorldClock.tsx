@@ -73,15 +73,7 @@ export function WorldClock() {
   };
 
   const renderCityName = (name: string) => {
-    if (!name) return name;
-    const firstLetter = name[0];
-    const rest = name.slice(1);
-    return (
-      <>
-        <span className="text-blue-500">{firstLetter}</span>
-        {rest}
-      </>
-    );
+    return name;
   };
 
   return (

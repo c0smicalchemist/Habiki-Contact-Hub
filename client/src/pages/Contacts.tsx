@@ -408,10 +408,10 @@ export default function Contacts() {
                     <Label>Select Group (Optional)</Label>
                     <Select value={selectedGroup || "ungrouped"} onValueChange={(val) => setSelectedGroup(val === "ungrouped" ? null : val)}>
                       <SelectTrigger data-testid="select-import-group">
-                        <SelectValue placeholder="No group (ungrouped)" />
+                        <SelectValue placeholder={`${t("contacts.noGroup")} (${t("contacts.ungrouped")})`} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ungrouped">No group</SelectItem>
+                        <SelectItem value="ungrouped">{t("contacts.noGroup")}</SelectItem>
                         {groups.map((group: ContactGroup) => (
                           <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
                         ))}
@@ -495,7 +495,7 @@ export default function Contacts() {
                       <SelectValue placeholder="Select a group" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ungrouped">No group</SelectItem>
+                      <SelectItem value="ungrouped">{t("contacts.noGroup")}</SelectItem>
                       {groups.map((group: ContactGroup) => (
                         <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
                       ))}
@@ -569,7 +569,7 @@ export default function Contacts() {
             <CardTitle>
               {selectedGroup
                 ? groups.find((g: ContactGroup) => g.id === selectedGroup)?.name
-                : "All Contacts"}
+                : {t("contacts.allContacts")}}
             </CardTitle>
             <CardDescription>
               {filteredContacts.length} contact{filteredContacts.length !== 1 ? 's' : ''}
