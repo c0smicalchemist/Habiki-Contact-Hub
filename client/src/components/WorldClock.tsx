@@ -95,7 +95,7 @@ export function WorldClock() {
               <div className="text-lg font-bold font-mono tabular-nums" data-testid={`time-${tz.timezone}`}>
                 {renderTime(times.get(tz.timezone) || "00:00:00")}
               </div>
-              <div className="text-xs text-muted-foreground mt-1 text-center">
+              <div className="text-xs text-muted-foreground mt-1 text-center" style={{ color: 'inherit' }}>
                 {renderCityName(language === 'zh' ? tz.nameZh : tz.name)}
               </div>
               <div className="text-xs text-muted-foreground/60">

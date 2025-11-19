@@ -405,7 +405,7 @@ export default function Contacts() {
               {importStep === 2 && (
                 <div className="space-y-4">
                   <div>
-                    <Label>Select Group (Optional)</Label>
+                    <Label>{t("contacts.import.selectGroup")} ({t("contacts.dialog.optional")})</Label>
                     <Select value={selectedGroup || "ungrouped"} onValueChange={(val) => setSelectedGroup(val === "ungrouped" ? null : val)}>
                       <SelectTrigger data-testid="select-import-group">
                         <SelectValue placeholder={`${t("contacts.noGroup")} (${t("contacts.ungrouped")})`} />
@@ -462,7 +462,7 @@ export default function Contacts() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label>Phone Number *</Label>
+                  <Label>{t("contacts.dialog.phoneNumber")} *</Label>
                   <Input
                     value={contactData.phoneNumber}
                     onChange={(e) => setContactData({ ...contactData, phoneNumber: e.target.value })}
@@ -471,7 +471,7 @@ export default function Contacts() {
                   />
                 </div>
                 <div>
-                  <Label>Name</Label>
+                  <Label>{t("contacts.dialog.contactName")}</Label>
                   <Input
                     value={contactData.name}
                     onChange={(e) => setContactData({ ...contactData, name: e.target.value })}
@@ -480,7 +480,7 @@ export default function Contacts() {
                   />
                 </div>
                 <div>
-                  <Label>Email</Label>
+                  <Label>{t("contacts.table.email")}</Label>
                   <Input
                     value={contactData.email}
                     onChange={(e) => setContactData({ ...contactData, email: e.target.value })}
@@ -489,7 +489,7 @@ export default function Contacts() {
                   />
                 </div>
                 <div>
-                  <Label>Group</Label>
+                  <Label>{t("contacts.table.group")}</Label>
                   <Select value={contactData.groupId || "ungrouped"} onValueChange={(value) => setContactData({ ...contactData, groupId: value === "ungrouped" ? "" : value })}>
                     <SelectTrigger data-testid="select-contact-group">
                       <SelectValue placeholder="Select a group" />
@@ -503,7 +503,7 @@ export default function Contacts() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Notes</Label>
+                  <Label>{t("contacts.table.notes")}</Label>
                   <Textarea
                     value={contactData.notes}
                     onChange={(e) => setContactData({ ...contactData, notes: e.target.value })}
@@ -569,7 +569,7 @@ export default function Contacts() {
             <CardTitle>
               {selectedGroup
                 ? groups.find((g: ContactGroup) => g.id === selectedGroup)?.name
-                : {t("contacts.allContacts")}}
+                : t("contacts.allContacts")}
             </CardTitle>
             <CardDescription>
               {filteredContacts.length} contact{filteredContacts.length !== 1 ? 's' : ''}
@@ -579,11 +579,11 @@ export default function Contacts() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t("contacts.table.name")}</TableHead>
+                  <TableHead>{t("contacts.table.phone")}</TableHead>
+                  <TableHead>{t("contacts.table.email")}</TableHead>
+                  <TableHead>{t("contacts.table.group")}</TableHead>
+                  <TableHead>{t("contacts.table.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

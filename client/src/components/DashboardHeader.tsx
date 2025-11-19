@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { LanguageToggle } from "./LanguageToggle";
+import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LogOut } from "lucide-react";
@@ -21,6 +22,7 @@ export function DashboardHeader() {
           <img src={logoUrl} alt="Yubin Dash" className="h-10 w-auto cursor-pointer" />
         </Link>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <LanguageToggle />
           <Button 
             variant="ghost" 

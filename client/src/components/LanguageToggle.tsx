@@ -12,6 +12,7 @@ export function LanguageToggle() {
         onClick={() => setLanguage('en')}
         className="h-8 px-3 gap-2"
         data-testid="button-language-en"
+        aria-pressed={language === 'en'}
       >
         <span className="text-base">🇺🇸</span>
         <span className="text-xs font-medium">EN</span>
@@ -22,6 +23,7 @@ export function LanguageToggle() {
         onClick={() => setLanguage('zh')}
         className="h-8 px-3 gap-2"
         data-testid="button-language-zh"
+        aria-pressed={language === 'zh'}
       >
         <span className="text-base">🇨🇳</span>
         <span className="text-xs font-medium">中文</span>
