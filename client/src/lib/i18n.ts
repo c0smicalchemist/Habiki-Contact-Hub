@@ -276,6 +276,9 @@ export const translations = {
     'clientDashboard.noApiKeys': 'No API keys found',
     'clientDashboard.generateKey': 'Generate New Key',
     
+    // World Clock
+    'worldClock.title': 'World Clock',
+    
     // Common
     'common.loading': 'Loading...',
     'common.error': 'Error',
@@ -564,6 +567,9 @@ export const translations = {
     'clientDashboard.apiKeysDesc': '个密钥已配置',
     'clientDashboard.noApiKeys': '未找到API密钥',
     'clientDashboard.generateKey': '生成新密钥',
+    
+    // World Clock
+    'worldClock.title': '世界时钟',
     
     // Common
     'common.loading': '加载中...',

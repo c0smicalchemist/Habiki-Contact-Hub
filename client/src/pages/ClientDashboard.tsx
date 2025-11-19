@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { AddCreditsDialog } from "@/components/AddCreditsDialog";
 import { ApiKeysManagement } from "@/components/ApiKeysManagement";
+import { WorldClock } from "@/components/WorldClock";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -150,6 +151,8 @@ export default function ClientDashboard() {
             </Link>
           </Card>
         </div>
+
+        <WorldClock />
 
         <Card>
           <CardHeader>
