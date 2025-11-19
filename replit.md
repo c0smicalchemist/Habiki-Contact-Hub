@@ -1,7 +1,7 @@
 # Ibiki SMS API Middleware
 
 ## Overview
-Ibiki SMS is a professional SMS API middleware platform designed to secure and manage SMS communication through ExtremeSMS. It hides ExtremeSMS credentials from clients while offering robust features for pricing management, credit control, and usage tracking. The platform includes a multi-client API key system with individual credit balances, real-time usage monitoring, and a comprehensive admin dashboard for system configuration and client management. Key capabilities include 2-way SMS support, live balance monitoring, and secure password reset functionality.
+Ibiki SMS is a professional SMS API middleware platform designed to secure and manage SMS communication through ExtremeSMS. It hides ExtremeSMS credentials from clients while offering robust features for pricing management, credit control, and usage tracking. The platform includes a multi-client API key system with individual credit balances, real-time usage monitoring, and a comprehensive admin dashboard for system configuration and client management. Key capabilities include 2-way SMS support, live balance monitoring, secure password reset functionality, and admin impersonation allowing admins to manage any client's Contacts, SendSMS, and Inbox without logging in as them.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -31,6 +31,7 @@ The design is inspired by Stripe Dashboard, Linear, and Vercel Dashboard, emphas
 - **Password Reset**: Secure password reset flow via email with token validation.
 - **Live Data**: All statistics and activity logs are populated with real-time data.
 - **Business Field Routing**: Advanced message routing based on business fields, conversation history, and assigned phone numbers.
+- **Admin Impersonation**: ClientSelector dropdown on Contacts, SendSMS, and Inbox pages allowing admins to select and manage any client's data without logging in as them. Selection persists in localStorage across page navigation. All backend routes validate admin role before accepting userId parameter with comprehensive security checks.
 
 ## External Dependencies
 
