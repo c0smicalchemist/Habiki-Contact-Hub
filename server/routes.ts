@@ -1694,7 +1694,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contact Groups API
   app.get("/api/contact-groups", authenticateToken, async (req: any, res) => {
     try {
-      const groups = await storage.getContactGroupsByUserId(req.user.userId);
+      // Admin can query on behalf of another user
+      const targetUserId = (req.user.role === 'admin' && req.query.userId) 
+        ? req.query.userId 
+        : req.user.userId;
+      const groups = await storage.getContactGroupsByUserId(targetUserId);
       res.json({ success: true, groups });
     } catch (error) {
       console.error("Get contact groups error:", error);
@@ -1704,12 +1708,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contact-groups", authenticateToken, async (req: any, res) => {
     try {
-      const { name, description, businessUnitPrefix } = req.body;
+      const { name, description, businessUnitPrefix, userId } = req.body;
       if (!name) {
         return res.status(400).json({ error: "Group name is required" });
       }
+      // Admin can create on behalf of another user
+      const targetUserId = (req.user.role === 'admin' && userId) 
+        ? userId 
+        : req.user.userId;
       const group = await storage.createContactGroup({
-        userId: req.user.userId,
+        userId: targetUserId,
         name,
         description: description || null,
         businessUnitPrefix: businessUnitPrefix || null
@@ -1770,7 +1778,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contacts API
   app.get("/api/contacts", authenticateToken, async (req: any, res) => {
     try {
-      const contacts = await storage.getContactsByUserId(req.user.userId);
+      // Admin can query on behalf of another user
+      const targetUserId = (req.user.role === 'admin' && req.query.userId) 
+        ? req.query.userId 
+        : req.user.userId;
+      const contacts = await storage.getContactsByUserId(targetUserId);
       res.json({ success: true, contacts });
     } catch (error) {
       console.error("Get contacts error:", error);
@@ -1793,9 +1805,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         groupId: req.body.groupId || null
       });
       
+      // Admin can create on behalf of another user
+      const targetUserId = (req.user.role === 'admin' && req.body.userId) 
+        ? req.body.userId 
+        : req.user.userId;
+      
       const contact = await storage.createContact({
         ...validated,
-        userId: req.user.userId
+        userId: targetUserId
       });
       res.json({ success: true, contact });
     } catch (error: any) {
@@ -1809,14 +1826,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contacts/import-csv", authenticateToken, async (req: any, res) => {
     try {
-      const { contacts, groupId } = req.body;
+      const { contacts, groupId, userId } = req.body;
       
       if (!Array.isArray(contacts) || contacts.length === 0) {
         return res.status(400).json({ error: "Contacts array is required" });
       }
 
+      // Admin can import on behalf of another user
+      const targetUserId = (req.user.role === 'admin' && userId) 
+        ? userId 
+        : req.user.userId;
+
       const insertContacts = contacts.map(c => ({
-        userId: req.user.userId,
+        userId: targetUserId,
         phoneNumber: c.phoneNumber,
         name: c.name || null,
         email: c.email || null,
