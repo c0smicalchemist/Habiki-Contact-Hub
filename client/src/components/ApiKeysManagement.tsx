@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, AlertCircle } from "lucide-react";
+import { Trash2, Plus, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -28,13 +28,15 @@ interface ApiKey {
 
 interface ApiKeysManagementProps {
   apiKeys: ApiKey[];
+  isCompact?: boolean;
 }
 
-export function ApiKeysManagement({ apiKeys }: ApiKeysManagementProps) {
+export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagementProps) {
   const { toast } = useToast();
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [revokeKeyId, setRevokeKeyId] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const generateKeyMutation = useMutation({
     mutationFn: async () => {
@@ -83,6 +85,79 @@ export function ApiKeysManagement({ apiKeys }: ApiKeysManagementProps) {
       });
     }
   });
+
+  if (isCompact) {
+    return (
+      <>
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">API Keys</CardTitle>
+                <CardDescription className="text-xs">
+                  {apiKeys.length} {apiKeys.length === 1 ? 'key' : 'keys'} configured
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                data-testid="button-toggle-api-keys"
+              >
+                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
+          </CardHeader>
+          {isExpanded && (
+            <CardContent>
+              <div className="space-y-2 mb-3">
+                {apiKeys.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    No API keys found
+                  </p>
+                ) : (
+                  apiKeys.map((key) => (
+                    <div
+                      key={key.id}
+                      className="flex items-center justify-between p-2 rounded border border-border text-xs"
+                      data-testid={`api-key-${key.id}`}
+                    >
+                      <code className="font-mono">{key.displayKey}</code>
+                      <Badge variant={key.isActive ? "default" : "secondary"} className="text-xs">
+                        {key.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => generateKeyMutation.mutate()}
+                disabled={generateKeyMutation.isPending}
+                data-testid="button-generate-key"
+              >
+                <Plus className="w-3 h-3 mr-2" />
+                Generate New Key
+              </Button>
+            </CardContent>
+          )}
+        </Card>
+
+        {newApiKey && (
+          <ApiKeyDialog
+            open={showApiKeyDialog}
+            onOpenChange={(open) => {
+              setShowApiKeyDialog(open);
+              if (!open) setNewApiKey(null);
+            }}
+            apiKey={newApiKey}
+            title="New API Key Generated"
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <>

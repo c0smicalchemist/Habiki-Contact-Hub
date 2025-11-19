@@ -109,44 +109,47 @@ export default function ClientDashboard() {
           />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Pricing Information</CardTitle>
-            <CardDescription>
-              Your SMS pricing details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-muted/50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Rate per SMS</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cost charged for each SMS message sent
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold" data-testid="text-rate-per-sms">
-                    ${parseFloat(ratePerSms).toFixed(4)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">per message</p>
-                </div>
-              </div>
-              {parseFloat(credits) > 0 && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Approximate messages available:</span>
-                    <span className="font-semibold" data-testid="text-messages-available">
-                      ~{Math.floor(parseFloat(credits) / parseFloat(ratePerSms)).toLocaleString()} messages
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <ApiKeysManagement apiKeys={apiKeys} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+            <Link href="/send-sms">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5" />
+                  Send SMS
+                </CardTitle>
+                <CardDescription>
+                  Send single or bulk SMS messages
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+            <Link href="/inbox">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Inbox className="h-5 w-5" />
+                  Inbox
+                </CardTitle>
+                <CardDescription>
+                  View and reply to incoming messages
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+            <Link href="/contacts">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Contacts
+                </CardTitle>
+                <CardDescription>
+                  Manage your contact list
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+        </div>
 
         <Card>
           <CardHeader>
@@ -206,46 +209,42 @@ export default function ClientDashboard() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
-            <Link href="/send-sms">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5" />
-                  Send SMS
-                </CardTitle>
-                <CardDescription>
-                  Send single or bulk SMS messages
-                </CardDescription>
-              </CardHeader>
-            </Link>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Pricing Information</CardTitle>
+              <CardDescription className="text-xs">
+                Your SMS pricing details
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rate per SMS</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold" data-testid="text-rate-per-sms">
+                      ${parseFloat(ratePerSms).toFixed(4)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">per message</p>
+                  </div>
+                </div>
+                {parseFloat(credits) > 0 && (
+                  <div className="pt-3 border-t border-border">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Estimated messages:</span>
+                      <span className="font-semibold" data-testid="text-messages-available">
+                        ~{Math.floor(parseFloat(credits) / parseFloat(ratePerSms)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
           </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
-            <Link href="/inbox">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Inbox className="h-5 w-5" />
-                  Inbox
-                </CardTitle>
-                <CardDescription>
-                  View and reply to incoming messages
-                </CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
-            <Link href="/contacts">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Contacts
-                </CardTitle>
-                <CardDescription>
-                  Manage your contact list
-                </CardDescription>
-              </CardHeader>
-            </Link>
-          </Card>
+
+          <ApiKeysManagement apiKeys={apiKeys} isCompact={true} />
         </div>
 
         <div className="flex gap-3">
