@@ -1,263 +1,42 @@
 # Ibiki SMS API Middleware
 
 ## Overview
-
-Ibiki SMS is a professional SMS API middleware platform that acts as a secure passthrough service to ExtremeSMS. It enables users to hide their ExtremeSMS credentials from clients while managing pricing, credits, and usage tracking. The platform provides a multi-client API key system with individual credit balances, usage monitoring, and a complete admin dashboard for system configuration and client management.
-
-## Recent Changes (November 19, 2025)
-
-### Version 11.5 (Latest - Login Persistence Fix)
-1. **CRITICAL FIX: Login Sessions Now Persist**:
-   - Fixed JWT secret environment variable mismatch (JWT_SECRET → SESSION_SECRET)
-   - Login tokens now validate correctly after page refresh/browser restart
-   - Users stay logged in for full 7-day token lifetime
-   - No more "authentication required" errors after restart
-2. **Environment Configuration**:
-   - Updated .env.example with detailed comments for SESSION_SECRET
-   - Deploy script ensures SESSION_SECRET is generated and preserved
-   - SESSION_SECRET never changes after initial deployment (critical for login persistence)
-3. **Documentation**:
-   - Added LOGIN_FIX_GUIDE.md with troubleshooting steps
-   - Updated deployment guides with .env preservation instructions
-   - Added verification steps for login persistence testing
-
-### Version 11.4 (PostgreSQL Persistence + Full Translations)
-1. **CRITICAL FIX: Database Persistence**: Switched from MemStorage to PostgreSQL-backed DbStorage
-   - Users, API keys, and settings now persist across restarts and updates
-   - DbStorage class implements IStorage using Drizzle ORM with Neon serverless PostgreSQL
-   - WebSocket configuration for serverless database connections
-   - Zero data loss on application restarts or updates
-2. **Complete Translation Coverage**: Fixed all remaining untranslated text
-   - ApiEndpointCard now uses translation system
-   - Added `api.requestExample` and `api.responseExample` translation keys
-   - **Payload content now translates**: Example messages, phone numbers, and names in code samples switch between English and Chinese
-   - 100% translation coverage across entire application (EN + 中文)
-3. **Database Safety**: All client data preserved through updates
-   - Users table persists
-   - API keys persist
-   - Client profiles and settings persist (credits, assignedPhoneNumbers, markup)
-   - Message logs and credit transactions persist
-4. **Production-Ready Storage**:
-   - Singleton connection pool prevents socket leaks
-   - Graceful shutdown handlers (SIGINT/SIGTERM) close pool cleanly
-   - Automatic fallback to MemStorage when DATABASE_URL missing (dev mode)
-   - First user auto-promotion to admin preserved
-   - Default credits and profile values maintained
-
-### Version 11 (2-Way SMS Support)
-1. **Incoming SMS Management**: Complete 2-way SMS system with webhook integration
-   - New endpoint POST /webhook/incoming-sms receives incoming messages from ExtremeSMS
-   - Messages routed to clients based on assigned phone numbers
-   - Client API endpoint GET /api/v2/sms/inbox for external access (API key auth)
-   - Dashboard endpoint GET /api/client/inbox for UI access (JWT auth)
-   - Admin can assign phone numbers to clients via inline editing in client management table
-2. **Client Dashboard Inbox**: Live incoming message display
-   - Shows sender info (name, business, phone number)
-   - Auto-refreshes every 5 seconds
-   - Displays message status and timestamps
-   - Empty state when no messages or no assigned phone number
-3. **Database Schema**: New incomingMessages table with fields:
-   - userId (client association), from, firstname, lastname, business
-   - message, status, matchedBlockWord, receiver, usedmodem, port
-   - timestamp, messageId (ExtremeSMS reference)
-   - assignedPhoneNumber field added to clientProfiles for routing
-4. **API Documentation**: Updated with 2-way SMS info
-   - Inbox endpoint documentation with request/response examples
-   - Webhook configuration instructions for ExtremeSMS setup
-   - Example payload structure from ExtremeSMS
-   - Note about phone number assignment requirement
-
-### Version 10 (ExtremeSMS Balance Display)
-1. **Live Balance Monitoring**: Admin dashboard now displays real-time ExtremeSMS account balance
-   - New endpoint GET /api/admin/extremesms-balance
-   - Auto-refreshes every 30 seconds
-   - Shows balance with currency (e.g., "USD 1,234.56")
-   - Displays loading and error states appropriately
-   - Integrated as 4th stat card on admin dashboard
-2. **Security Hardening**:
-   - No sensitive data leaked in error messages or logs
-   - Only HTTP status codes logged for debugging
-   - Generic error messages to protect API credentials
-   - Axios validateStatus configured for proper error handling
-
-### Version 9 (Password Reset via Email)
-1. **Password Reset Feature**: Complete password reset flow with email notifications
-   - Forgot password page with email input
-   - Reset password page with token validation
-   - Email sent via Resend integration with professional HTML template
-   - Secure token generation (1 hour expiration)
-   - "Forgot Password?" link on login page
-   - Success screens and error handling throughout
-2. **Database Schema Updates**: Added resetToken and resetTokenExpiry fields to users table
-3. **Backend API**: Three new endpoints for password reset flow
-   - POST /api/auth/forgot-password (sends reset email)
-   - GET /api/auth/verify-reset-token/:token (validates token)
-   - POST /api/auth/reset-password (updates password)
-4. **Security Features**:
-   - Tokens expire after 1 hour
-   - Email enumeration protection (always returns success)
-   - Password hashing with bcrypt
-   - Tokens cleared after successful reset
-
-### Version 8 (All Dummy Data Removed)
-1. **API Key Management**: Complete system for managing API keys
-   - Copy button in signup dialog (full key shown once)
-   - View all API keys in client dashboard (masked for security)
-   - Generate new API keys anytime
-   - Revoke individual keys with confirmation dialog
-   - Show key creation date and last used date
-2. **100% Live Data - Zero Dummy Values**: All statistics pull real data from database
-   - Total messages count from actual database (no dummy data)
-   - Total clients count from actual user database
-   - **Recent API Activity**: Live message logs with client names, timestamps, and status
-   - Auto-refresh every 5 seconds for real-time monitoring
-   - Proper empty states when no data exists yet
-3. **Fixed ExtremeSMS Integration**:
-   - Test Connection uses correct GET /api/v2/account/balance endpoint
-   - All test endpoints use Bearer authentication
-   - Admin API testing utility works correctly
-4. **API Testing Utility**: Admin dashboard now has "API Testing" tab to test all endpoints
-5. **Error Log Viewer**: Monitor failed SMS deliveries and system errors with real-time auto-refresh
-6. **Security**: All admin endpoints properly secured with requireAdmin middleware
-
-### Version 7
-1. **API Documentation Updated**: Changed from api.ibikisms.com to http://151.243.109.79 (server IP)
-2. **Correct API Routes**: All curl examples now include /api prefix (e.g., /api/v2/sms/sendsingle)
-3. **TypeScript Fixed**: Resolved all LSP errors by importing User type
-4. **Test Connection**: Functional button to test ExtremeSMS API connectivity with status badge
-5. **Real Client Data**: Admin dashboard shows actual clients from database (no dummy data)
-6. **Verified Proxy Routing**: All /api/v2/* routes correctly forward to ExtremeSMS
-
-### Previous Updates
-1. **Multilingual Support**: Implemented English/Chinese language toggle throughout the application
-2. **Add Credits Security**: Restricted add-credits endpoint to admin-only with requireAdmin middleware
-3. **Navigation Improvements**: Added back buttons to all dashboard pages (Client Dashboard, Admin Dashboard, API Docs)
-4. **API Key Security**: API keys displayed in masked format (prefix...suffix) after creation - full key only shown once during signup
-5. **Credit Transaction Tracking**: All credit additions are logged with balanceBefore/balanceAfter for audit trail
+Ibiki SMS is a professional SMS API middleware platform designed to secure and manage SMS communication through ExtremeSMS. It hides ExtremeSMS credentials from clients while offering robust features for pricing management, credit control, and usage tracking. The platform includes a multi-client API key system with individual credit balances, real-time usage monitoring, and a comprehensive admin dashboard for system configuration and client management. Key capabilities include 2-way SMS support, live balance monitoring, and secure password reset functionality.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
 ### Frontend Architecture
-
-**Framework**: React with TypeScript using Vite as the build tool
-
-**UI Framework**: Shadcn/ui component library built on Radix UI primitives with Tailwind CSS for styling
-
-**Design System**: 
-- Inspired by Stripe Dashboard, Linear, and Vercel Dashboard
-- Typography: Inter font for UI, JetBrains Mono for code/credentials
-- Clean, B2B SaaS aesthetic prioritizing clarity and information density
-- Dark mode support via CSS custom properties
-- Responsive grid layouts with mobile-first breakpoints
-
-**State Management**: 
-- TanStack Query (React Query) for server state management
-- Local storage for JWT token persistence
-- React hooks for local component state
-
-**Routing**: Wouter for client-side routing with role-based access control
-
-**Key Pages**:
-- Landing page (public marketing with language toggle)
-- Signup/Login (authentication with multilingual support)
-- Client Dashboard (usage stats, masked API keys, message logs, add credits button)
-- Admin Dashboard (system config, client management, ExtremeSMS configuration)
-- API Documentation (interactive endpoint reference with back navigation)
-
-**Internationalization**:
-- Dual-language support (English and Chinese)
-- LanguageContext provider for centralized translation management
-- LanguageToggle component in navigation header
-- Language preference persisted in localStorage
-- Translation keys organized by feature area in client/src/lib/i18n.ts
+The frontend is built with React and TypeScript, using Vite as the build tool. It leverages Shadcn/ui (Radix UI + Tailwind CSS) for a clean, B2B SaaS-inspired design, featuring Inter font for UI and JetBrains Mono for code, dark mode support, and responsive layouts. State management is handled by TanStack Query for server state and React hooks for local component state, with Wouter for client-side routing and role-based access control. The application supports English and Chinese languages, with preferences stored in localStorage.
 
 ### Backend Architecture
-
-**Runtime**: Node.js with Express.js server
-
-**Language**: TypeScript with ES modules
-
-**Authentication Strategy**:
-- JWT-based authentication for dashboard/admin access
-- SHA-256 hashed API keys for client API requests
-- Role-based authorization (admin vs client)
-- Middleware functions for token verification and role checks
-
-**API Proxy Pattern**:
-- Middleware authenticates incoming requests via API key
-- Validates client credits before forwarding to ExtremeSMS
-- Proxies requests to ExtremeSMS with admin's credentials
-- Tracks usage and deducts credits from client balance
-- Logs all messages for audit trail
-
-**Storage Layer**:
-- Abstract IStorage interface for database operations
-- In-memory implementation (MemStorage) for development
-- Designed for PostgreSQL via Drizzle ORM in production
-- Database schema includes: users, apiKeys, clientProfiles, systemConfig, messageLogs, creditTransactions
-
-**Session Management**: 
-- Stateless JWT tokens (no server-side sessions)
-- API keys stored as SHA-256 hashed values for security
-- API keys displayed as masked format (prefix...suffix) after creation
-- Full plaintext API key only shown once during signup for security
-- Tokens include userId and role claims
-
-**Credit Management**:
-- Admin-only credit addition via POST /api/admin/add-credits
-- requireAdmin middleware enforces role-based access control
-- Credit transactions logged with balanceBefore and balanceAfter
-- Client "Add Credits" button shows contact admin notification
-- All credit changes tracked in creditTransactions table
+The backend is a Node.js Express.js server written in TypeScript. It uses JWT for dashboard/admin authentication and SHA-256 hashed API keys for client API requests, enforcing role-based authorization. An API proxy pattern authenticates requests, validates client credits, and forwards them to ExtremeSMS using the admin's credentials, while tracking usage and logging messages. The storage layer uses an abstract IStorage interface, with an in-memory implementation for development and PostgreSQL via Drizzle ORM for production. Session management is stateless, relying on JWT tokens, and API keys are securely stored and displayed. Credit management is admin-only, with all transactions logged for auditing.
 
 ### Data Storage
+The project uses Drizzle ORM with a PostgreSQL dialect, specifically Neon serverless PostgreSQL. The schema includes tables for `users`, `apiKeys`, `clientProfiles`, `systemConfig`, `messageLogs`, `creditTransactions`, and `incomingMessages`. Drizzle Kit manages schema migrations. Database connection requires a `DATABASE_URL` environment variable.
 
-**ORM**: Drizzle ORM with PostgreSQL dialect
+### UI/UX Decisions
+The design is inspired by Stripe Dashboard, Linear, and Vercel Dashboard, emphasizing clarity and information density. It features Inter font for general UI, JetBrains Mono for code and credentials, and supports dark mode. Responsive grid layouts ensure usability across devices.
 
-**Database Provider**: Neon serverless PostgreSQL (based on @neondatabase/serverless dependency)
+### Feature Specifications
+- **Multi-client API Key System**: Secure API key generation, masking, and revocation.
+- **Credit Management**: Individual client credit balances, admin-only credit addition, and detailed transaction logging.
+- **Usage Tracking**: Real-time monitoring of client API usage.
+- **2-Way SMS Support**: Incoming SMS handling, routing to clients, and client-specific inboxes.
+- **ExtremeSMS Integration**: Proxying of SMS sending, delivery reports, and balance checks.
+- **Admin Dashboard**: Comprehensive system configuration, client management, and ExtremeSMS API testing.
+- **Internationalization**: Full English and Chinese language support across the application.
+- **Password Reset**: Secure password reset flow via email with token validation.
+- **Live Data**: All statistics and activity logs are populated with real-time data.
+- **Business Field Routing**: Advanced message routing based on business fields, conversation history, and assigned phone numbers.
 
-**Schema Design**:
-- `users` - Both admin and client accounts with role field
-- `apiKeys` - Client API credentials (hashed with prefix/suffix for display)
-- `clientProfiles` - Credit balances, custom markup, and assignedPhoneNumber per client
-- `systemConfig` - Key-value store for ExtremeSMS credentials and pricing
-- `messageLogs` - Audit trail of all outbound SMS transactions
-- `creditTransactions` - Financial transaction history
-- `incomingMessages` - Incoming SMS messages with sender info and routing data
+## External Dependencies
 
-**Migrations**: Drizzle Kit for schema migrations stored in /migrations directory
-
-**Connection**: Environment variable DATABASE_URL required for database provisioning
-
-### External Dependencies
-
-**Third-Party SMS Service**: ExtremeSMS (https://extremesms.net)
-- Integration via HTTP REST API
-- Admin stores ExtremeSMS API key in system config
-- Five endpoints proxied: sendsingle, sendbulk, sendbulkmulti, checkdelivery, checkbalance
-- All requests authenticated with admin's ExtremeSMS credentials
-
-**HTTP Client**: Axios for making requests to ExtremeSMS API
-
-**Password Hashing**: bcryptjs for secure password storage
-
-**Token Generation**: jsonwebtoken for JWT creation and verification
-
-**Development Tools**:
-- Vite plugins for Replit integration (runtime error overlay, cartographer, dev banner)
-- esbuild for server-side bundling in production
-
-**Deployment Infrastructure**:
-- PM2 process manager for production server
-- Nginx reverse proxy for HTTPS/domain routing
-- Ubuntu/Debian Linux server environment
-- Automated 1-click deployment script (deploy.sh)
-- Deploy in-place from /root (default) or copy to /opt
-- Complete deployment documentation (DEPLOYMENT.md, QUICKSTART.md)
-- First user auto-promoted to admin for easy setup
-- Server target: 151.243.109.79
-- Port: 6000 (internal), 80 (Nginx proxy)
+- **Third-Party SMS Service**: ExtremeSMS (https://extremesms.net) for SMS gateway functionality.
+- **HTTP Client**: Axios for API requests to ExtremeSMS.
+- **Password Hashing**: bcryptjs for secure storage of user passwords.
+- **Token Generation**: jsonwebtoken for JWT creation and verification.
+- **Database Provider**: Neon serverless PostgreSQL via `@neondatabase/serverless`.
+- **Email Service**: Resend for sending password reset emails.
