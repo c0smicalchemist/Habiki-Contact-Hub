@@ -77,7 +77,7 @@ export default function AdminDashboard() {
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to save configuration",
+        description: t("admin.config.error.saveFailed"),
         variant: "destructive"
       });
     }
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
       setConnectionStatus('disconnected');
       toast({
         title: "Connection Failed",
-        description: error.message || "Failed to connect to ExtremeSMS API",
+        description: error.message || t("admin.config.error.connectionFailed"),
         variant: "destructive"
       });
     }
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to update phone numbers",
+        description: t("admin.config.error.updatePhonesFailed"),
         variant: "destructive"
       });
     }

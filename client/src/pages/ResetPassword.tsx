@@ -8,12 +8,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ResetPassword() {
   const [, navigate] = useLocation();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetSuccess, setResetSuccess] = useState(false);
+  const { t } = useLanguage();
   const { toast } = useToast();
 
   // Get token from URL
@@ -46,7 +48,7 @@ export default function ResetPassword() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to reset password",
+        description: error.message || t("auth.resetPassword.error"),
         variant: "destructive"
       });
     }

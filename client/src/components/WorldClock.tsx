@@ -50,6 +50,40 @@ export function WorldClock() {
     return () => clearInterval(interval);
   }, []);
 
+  const renderTime = (timeString: string) => {
+    if (!timeString) return "00:00:00";
+    
+    // Parse hour to check if PM (>= 12)
+    const hour = parseInt(timeString.split(':')[0]);
+    const isPM = hour >= 12;
+    
+    if (isPM) {
+      // Highlight first digit in blue
+      const firstChar = timeString[0];
+      const rest = timeString.slice(1);
+      return (
+        <>
+          <span className="text-blue-500">{firstChar}</span>
+          {rest}
+        </>
+      );
+    }
+    
+    return timeString;
+  };
+
+  const renderCityName = (name: string) => {
+    if (!name) return name;
+    const firstLetter = name[0];
+    const rest = name.slice(1);
+    return (
+      <>
+        <span className="text-blue-500">{firstLetter}</span>
+        {rest}
+      </>
+    );
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -63,14 +97,14 @@ export function WorldClock() {
           {timeZones.map((tz) => (
             <div
               key={tz.timezone}
-              className="flex flex-col items-center p-2 rounded-md border border-border hover-elevate"
+              className="flex flex-col items-center p-2 rounded-md border-2 border-blue-500/30 hover-elevate"
               data-testid={`clock-${tz.timezone}`}
             >
               <div className="text-lg font-bold font-mono tabular-nums" data-testid={`time-${tz.timezone}`}>
-                {times.get(tz.timezone) || "00:00:00"}
+                {renderTime(times.get(tz.timezone) || "00:00:00")}
               </div>
               <div className="text-xs text-muted-foreground mt-1 text-center">
-                {language === 'zh' ? tz.nameZh : tz.name}
+                {renderCityName(language === 'zh' ? tz.nameZh : tz.name)}
               </div>
               <div className="text-xs text-muted-foreground/60">
                 {tz.offset}

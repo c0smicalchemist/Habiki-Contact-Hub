@@ -8,10 +8,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const { t } = useLanguage();
   const { toast } = useToast();
 
   const forgotPasswordMutation = useMutation({
@@ -27,7 +29,7 @@ export default function ForgotPassword() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to send reset email",
+        description: error.message || t("auth.forgotPassword.error"),
         variant: "destructive"
       });
     }

@@ -39,7 +39,7 @@ export default function Signup() {
     onError: (error: any) => {
       toast({
         title: "Signup failed",
-        description: error.message || "Please try again",
+        description: error.message || t('auth.signup.error'),
         variant: "destructive"
       });
     }

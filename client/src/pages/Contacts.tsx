@@ -93,7 +93,7 @@ export default function Contacts() {
       const response = await fetch(url, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {}
       });
-      if (!response.ok) throw new Error('Failed to fetch groups');
+      if (!response.ok) throw new Error(t('contacts.error.fetchGroupsFailed'));
       return response.json();
     }
   });
@@ -109,7 +109,7 @@ export default function Contacts() {
       const response = await fetch(url, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {}
       });
-      if (!response.ok) throw new Error('Failed to fetch contacts');
+      if (!response.ok) throw new Error(t('contacts.error.fetchFailed'));
       return response.json();
     }
   });
@@ -128,14 +128,14 @@ export default function Contacts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/contact-groups', effectiveUserId] });
-      toast({ title: "Success", description: "Contact group created" });
+      toast({ title: t('common.success'), description: t('contacts.success.groupCreated') });
       setShowGroupDialog(false);
       setGroupName("");
       setGroupDescription("");
       setBusinessUnitPrefix("");
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t('common.error'), description: error.message, variant: "destructive" });
     }
   });
 
@@ -150,12 +150,12 @@ export default function Contacts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts', effectiveUserId] });
-      toast({ title: "Success", description: "Contact created" });
+      toast({ title: t('common.success'), description: t('contacts.success.contactCreated') });
       setShowContactDialog(false);
       setContactData({ phoneNumber: "", name: "", email: "", notes: "", groupId: "" });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t('common.error'), description: error.message, variant: "destructive" });
     }
   });
 
@@ -170,14 +170,14 @@ export default function Contacts() {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts', effectiveUserId] });
-      toast({ title: "Success", description: `Imported ${data.count} contacts` });
+      toast({ title: t('common.success'), description: `${data.count} ${t('contacts.success.imported')}` });
       setShowImportDialog(false);
       setCsvFile(null);
       setCsvData([]);
       setImportStep(1);
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t('common.error'), description: error.message, variant: "destructive" });
     }
   });
 
@@ -191,7 +191,7 @@ export default function Contacts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/contacts', effectiveUserId] });
-      toast({ title: "Success", description: "Contact deleted" });
+      toast({ title: t('common.success'), description: t('contacts.success.contactDeleted') });
     }
   });
 
@@ -243,7 +243,7 @@ export default function Contacts() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to export contacts');
+        throw new Error(t('contacts.error.exportFailed'));
       }
       
       const blob = await response.blob();
@@ -256,9 +256,9 @@ export default function Contacts() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      toast({ title: "Success", description: "Contacts exported successfully" });
+      toast({ title: t('common.success'), description: t('contacts.success.exported') });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to export contacts", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('contacts.error.exportFailed'), variant: "destructive" });
     }
   };
 
@@ -273,8 +273,8 @@ export default function Contacts() {
         {isAdmin && (
           <Card>
             <CardHeader>
-              <CardTitle>Admin Mode</CardTitle>
-              <CardDescription>Select which client's contacts to manage</CardDescription>
+              <CardTitle>{t('contacts.adminMode')}</CardTitle>
+              <CardDescription>{t('contacts.selectClient')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ClientSelector 
@@ -293,8 +293,8 @@ export default function Contacts() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold">Contacts</h1>
-              <p className="text-muted-foreground">Manage your contact list and groups</p>
+              <h1 className="text-3xl font-bold">{t('contacts.title')}</h1>
+              <p className="text-muted-foreground">{t('contacts.subtitle')}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -302,12 +302,12 @@ export default function Contacts() {
             <DialogTrigger asChild>
               <Button variant="outline" data-testid="button-create-group">
                 <FolderPlus className="h-4 w-4 mr-2" />
-                Create Group
+                {t('contacts.newGroup')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Contact Group</DialogTitle>
+                <DialogTitle>{t('contacts.dialog.newGroup')}</DialogTitle>
                 <DialogDescription>
                   Organize your contacts into groups for easier management
                 </DialogDescription>
@@ -348,13 +348,13 @@ export default function Contacts() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowGroupDialog(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setShowGroupDialog(false)}>{t('common.cancel')}</Button>
                 <Button
                   onClick={() => createGroupMutation.mutate({ name: groupName, description: groupDescription, businessUnitPrefix: businessUnitPrefix || undefined })}
                   disabled={!groupName || createGroupMutation.isPending}
                   data-testid="button-save-group"
                 >
-                  Create Group
+                  {t('contacts.newGroup')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -362,14 +362,14 @@ export default function Contacts() {
 
           <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            {t('contacts.export')}
           </Button>
 
           <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" data-testid="button-import-csv">
                 <Upload className="h-4 w-4 mr-2" />
-                Import CSV
+                {t('contacts.import')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -434,7 +434,7 @@ export default function Contacts() {
                   setCsvData([]);
                   setCsvFile(null);
                 }}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 {importStep === 2 && (
                   <Button
@@ -513,13 +513,13 @@ export default function Contacts() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowContactDialog(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setShowContactDialog(false)}>{t('common.cancel')}</Button>
                 <Button
                   onClick={() => createContactMutation.mutate(contactData)}
                   disabled={!contactData.phoneNumber || createContactMutation.isPending}
                   data-testid="button-save-contact"
                 >
-                  Add Contact
+                  {t('contacts.addContact')}
                 </Button>
               </DialogFooter>
             </DialogContent>

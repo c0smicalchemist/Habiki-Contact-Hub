@@ -69,7 +69,7 @@ export default function Inbox() {
       const response = await fetch(url, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {}
       });
-      if (!response.ok) throw new Error('Failed to fetch messages');
+      if (!response.ok) throw new Error(t('inbox.error.fetchFailed'));
       return response.json();
     },
     refetchInterval: 10000, // Refresh every 10 seconds
@@ -86,7 +86,7 @@ export default function Inbox() {
       });
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "Reply sent successfully" });
+      toast({ title: t('common.success'), description: t('inbox.success.replySent') });
       setShowReplyDialog(false);
       setReplyText("");
       setSelectedMessage(null);
@@ -94,7 +94,7 @@ export default function Inbox() {
       queryClient.invalidateQueries({ queryKey: ['/api/client/messages'] });
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to send reply", variant: "destructive" });
+      toast({ title: t('common.error'), description: error.message || t('inbox.error.replyFailed'), variant: "destructive" });
     }
   });
 
@@ -106,7 +106,7 @@ export default function Inbox() {
 
   const handleSendReply = () => {
     if (!selectedMessage || !replyText) {
-      toast({ title: "Error", description: "Please enter a reply message", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('inbox.error.enterReply'), variant: "destructive" });
       return;
     }
     const payload: { to: string; message: string; userId?: string } = {
@@ -135,8 +135,8 @@ export default function Inbox() {
         {isAdmin && (
           <Card>
             <CardHeader>
-              <CardTitle>Admin Mode</CardTitle>
-              <CardDescription>Select which client's inbox to view</CardDescription>
+              <CardTitle>{t('inbox.adminMode')}</CardTitle>
+              <CardDescription>{t('inbox.selectClient')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ClientSelector 
@@ -156,9 +156,9 @@ export default function Inbox() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <InboxIcon className="h-8 w-8" />
-              Inbox
+              {t('clientDashboard.inbox')}
             </h1>
-            <p className="text-muted-foreground">View and reply to incoming SMS messages</p>
+            <p className="text-muted-foreground">{t('clientDashboard.inboxDesc')}</p>
           </div>
         </div>
 
@@ -166,16 +166,16 @@ export default function Inbox() {
         {isLoading ? (
           <Card>
             <CardContent className="p-6 text-center">
-              Loading messages...
+              {t('inbox.loading')}
             </CardContent>
           </Card>
         ) : messages.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <InboxIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">No Messages Yet</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('inbox.noMessages')}</h3>
               <p className="text-muted-foreground">
-                Incoming SMS messages will appear here
+                {t('inbox.noMessagesDesc')}
               </p>
             </CardContent>
           </Card>
@@ -206,7 +206,7 @@ export default function Inbox() {
                       data-testid={`button-reply-${sender}`}
                     >
                       <Reply className="h-4 w-4 mr-2" />
-                      Reply
+                      {t('inbox.reply')}
                     </Button>
                   </div>
                 </CardHeader>
@@ -239,21 +239,21 @@ export default function Inbox() {
       <Dialog open={showReplyDialog} onOpenChange={setShowReplyDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reply to Message</DialogTitle>
+            <DialogTitle>{t('inbox.reply')}</DialogTitle>
             <DialogDescription>
-              Sending reply to {selectedMessage?.from}
+              {t('inbox.replyTo')} {selectedMessage?.from}
               {selectedMessage?.firstname && ` (${selectedMessage.firstname})`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Original Message</Label>
+              <Label>{t('inbox.originalMessage')}</Label>
               <div className="border rounded-lg p-3 bg-muted text-sm">
                 {selectedMessage?.message}
               </div>
             </div>
             <div>
-              <Label htmlFor="reply-message">Your Reply *</Label>
+              <Label htmlFor="reply-message">{t('inbox.replyMessage')} *</Label>
               <Textarea
                 id="reply-message"
                 value={replyText}
@@ -269,7 +269,7 @@ export default function Inbox() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReplyDialog(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleSendReply}
@@ -277,7 +277,7 @@ export default function Inbox() {
               data-testid="button-send-reply"
             >
               <Reply className="h-4 w-4 mr-2" />
-              {replyMutation.isPending ? "Sending..." : "Send Reply"}
+              {replyMutation.isPending ? t('inbox.sending') : t('inbox.sendReply')}
             </Button>
           </DialogFooter>
         </DialogContent>

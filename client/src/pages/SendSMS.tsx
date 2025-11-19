@@ -81,7 +81,7 @@ export default function SendSMS() {
       const response = await fetch(url, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {}
       });
-      if (!response.ok) throw new Error('Failed to fetch contacts');
+      if (!response.ok) throw new Error(t('sendSms.error.fetchContactsFailed'));
       return response.json();
     }
   });
@@ -96,7 +96,7 @@ export default function SendSMS() {
       const response = await fetch(url, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {}
       });
-      if (!response.ok) throw new Error('Failed to fetch groups');
+      if (!response.ok) throw new Error(t('sendSms.error.fetchGroupsFailed'));
       return response.json();
     }
   });
@@ -163,7 +163,7 @@ export default function SendSMS() {
 
   const handleSendSingle = () => {
     if (!singleTo || !singleMessage) {
-      toast({ title: t('common.error'), description: "Please fill in all fields", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('sendSms.error.fillFields'), variant: "destructive" });
       return;
     }
     const payload: { to: string; message: string; userId?: string } = {
@@ -193,7 +193,7 @@ export default function SendSMS() {
     }
 
     if (recipients.length === 0 || !bulkMessage) {
-      toast({ title: t('common.error'), description: "Please provide recipients and message", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('sendSms.error.provideRecipients'), variant: "destructive" });
       return;
     }
 
@@ -210,7 +210,7 @@ export default function SendSMS() {
   const handleSendBulkMulti = () => {
     const validMessages = bulkMultiMessages.filter(m => m.to && m.message);
     if (validMessages.length === 0) {
-      toast({ title: t('common.error'), description: "Please provide at least one valid message", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('sendSms.error.provideMessage'), variant: "destructive" });
       return;
     }
     const payload: { messages: Array<{ to: string; message: string }>; userId?: string } = {
@@ -287,12 +287,12 @@ export default function SendSMS() {
         <TabsContent value="single">
           <Card>
             <CardHeader>
-              <CardTitle>Send Single SMS</CardTitle>
-              <CardDescription>Send an SMS to a single recipient</CardDescription>
+              <CardTitle>{t('sendSms.tabs.single')}</CardTitle>
+              <CardDescription>{t('sendSms.single.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="single-to">Recipient Phone Number *</Label>
+                <Label htmlFor="single-to">{t('sendSms.single.to')} *</Label>
                 <Input
                   id="single-to"
                   value={singleTo}
@@ -302,7 +302,7 @@ export default function SendSMS() {
                 />
               </div>
               <div>
-                <Label htmlFor="single-message">Message *</Label>
+                <Label htmlFor="single-message">{t('sendSms.single.message')} *</Label>
                 <Textarea
                   id="single-message"
                   value={singleMessage}
@@ -322,7 +322,7 @@ export default function SendSMS() {
                 data-testid="button-send-single"
               >
                 <Send className="h-4 w-4 mr-2" />
-                {sendSingleMutation.isPending ? "Sending..." : "Send SMS"}
+                {sendSingleMutation.isPending ? t('sendSms.single.sending') : t('sendSms.single.send')}
               </Button>
             </CardContent>
           </Card>
@@ -332,16 +332,16 @@ export default function SendSMS() {
         <TabsContent value="bulk">
           <Card>
             <CardHeader>
-              <CardTitle>Send Bulk SMS</CardTitle>
-              <CardDescription>Send the same message to multiple recipients</CardDescription>
+              <CardTitle>{t('sendSms.tabs.bulk')}</CardTitle>
+              <CardDescription>{t('sendSms.bulk.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Choose Recipients</Label>
+                <Label>{t('sendSms.bulk.recipients')}</Label>
                 <Tabs defaultValue="manual" className="mt-2">
                   <TabsList>
-                    <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-                    <TabsTrigger value="group">From Group</TabsTrigger>
+                    <TabsTrigger value="manual">{t('sendSms.bulk.manualEntry')}</TabsTrigger>
+                    <TabsTrigger value="group">{t('sendSms.bulk.fromGroup')}</TabsTrigger>
                   </TabsList>
                   <TabsContent value="manual" className="space-y-2">
                     <Textarea
@@ -400,7 +400,7 @@ export default function SendSMS() {
                 data-testid="button-send-bulk"
               >
                 <Users className="h-4 w-4 mr-2" />
-                {sendBulkMutation.isPending ? "Sending..." : "Send Bulk SMS"}
+                {sendBulkMutation.isPending ? t('sendSms.bulk.sending') : t('sendSms.bulk.send')}
               </Button>
             </CardContent>
           </Card>
@@ -410,15 +410,15 @@ export default function SendSMS() {
         <TabsContent value="bulk-multi">
           <Card>
             <CardHeader>
-              <CardTitle>Send Bulk Multi SMS</CardTitle>
-              <CardDescription>Send different messages to different recipients</CardDescription>
+              <CardTitle>{t('sendSms.bulkMulti.title')}</CardTitle>
+              <CardDescription>{t('sendSms.bulkMulti.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {bulkMultiMessages.map((msg, index) => (
                 <Card key={index}>
                   <CardContent className="pt-6 space-y-3">
                     <div className="flex items-center justify-between">
-                      <Label>Message #{index + 1}</Label>
+                      <Label>{t('sendSms.bulkMulti.messageNumber')}{index + 1}</Label>
                       {bulkMultiMessages.length > 1 && (
                         <Button
                           variant="ghost"
@@ -426,20 +426,20 @@ export default function SendSMS() {
                           onClick={() => removeBulkMultiRow(index)}
                           data-testid={`button-remove-multi-${index}`}
                         >
-                          Remove
+                          {t('sendSms.bulkMulti.remove')}
                         </Button>
                       )}
                     </div>
                     <Input
                       value={msg.to}
                       onChange={(e) => updateBulkMultiRow(index, 'to', e.target.value)}
-                      placeholder="Recipient phone number"
+                      placeholder={t('sendSms.bulkMulti.recipientPlaceholder')}
                       data-testid={`input-multi-to-${index}`}
                     />
                     <Textarea
                       value={msg.message}
                       onChange={(e) => updateBulkMultiRow(index, 'message', e.target.value)}
-                      placeholder="Message for this recipient"
+                      placeholder={t('sendSms.bulkMulti.messagePlaceholder')}
                       rows={3}
                       data-testid={`textarea-multi-message-${index}`}
                     />
@@ -453,7 +453,7 @@ export default function SendSMS() {
                 className="w-full"
                 data-testid="button-add-multi-row"
               >
-                + Add Another Message
+                {t('sendSms.bulkMulti.addAnother')}
               </Button>
 
               <Button
@@ -463,7 +463,7 @@ export default function SendSMS() {
                 data-testid="button-send-bulk-multi"
               >
                 <List className="h-4 w-4 mr-2" />
-                {sendBulkMultiMutation.isPending ? "Sending..." : `Send ${bulkMultiMessages.filter(m => m.to && m.message).length} Messages`}
+                {sendBulkMultiMutation.isPending ? t('sendSms.bulkMulti.sending') : `${t('sendSms.bulkMulti.send')} ${bulkMultiMessages.filter(m => m.to && m.message).length} ${t('sendSms.bulkMulti.messages')}`}
               </Button>
             </CardContent>
           </Card>
