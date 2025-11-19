@@ -73,7 +73,7 @@ fi
 
 echo ""
 echo "Step 7: Installing dependencies..."
-npm install --production
+npm install
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ npm install failed${NC}"
     exit 1
