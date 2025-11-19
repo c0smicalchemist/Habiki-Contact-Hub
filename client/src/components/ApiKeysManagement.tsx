@@ -6,6 +6,7 @@ import { Trash2, Plus, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ApiKeyDialog } from "./ApiKeyDialog";
 import {
   AlertDialog,
@@ -33,6 +34,7 @@ interface ApiKeysManagementProps {
 
 export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagementProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [revokeKeyId, setRevokeKeyId] = useState<string | null>(null);
@@ -93,9 +95,9 @@ export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagem
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">API Keys</CardTitle>
+                <CardTitle className="text-base">{t('clientDashboard.apiKeys')}</CardTitle>
                 <CardDescription className="text-xs">
-                  {apiKeys.length} {apiKeys.length === 1 ? 'key' : 'keys'} configured
+                  {apiKeys.length} {t('clientDashboard.apiKeysDesc')}
                 </CardDescription>
               </div>
               <Button
@@ -113,7 +115,7 @@ export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagem
               <div className="space-y-2 mb-3">
                 {apiKeys.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">
-                    No API keys found
+                    {t('clientDashboard.noApiKeys')}
                   </p>
                 ) : (
                   apiKeys.map((key) => (
@@ -124,7 +126,7 @@ export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagem
                     >
                       <code className="font-mono">{key.displayKey}</code>
                       <Badge variant={key.isActive ? "default" : "secondary"} className="text-xs">
-                        {key.isActive ? "Active" : "Inactive"}
+                        {key.isActive ? t('common.active') : t('common.inactive')}
                       </Badge>
                     </div>
                   ))
@@ -138,7 +140,7 @@ export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagem
                 data-testid="button-generate-key"
               >
                 <Plus className="w-3 h-3 mr-2" />
-                Generate New Key
+                {t('clientDashboard.generateKey')}
               </Button>
             </CardContent>
           )}

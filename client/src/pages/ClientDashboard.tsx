@@ -115,10 +115,10 @@ export default function ClientDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Send className="h-5 w-5" />
-                  Send SMS
+                  {t('clientDashboard.sendSms')}
                 </CardTitle>
                 <CardDescription>
-                  Send single or bulk SMS messages
+                  {t('clientDashboard.sendSmsDesc')}
                 </CardDescription>
               </CardHeader>
             </Link>
@@ -128,10 +128,10 @@ export default function ClientDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Inbox className="h-5 w-5" />
-                  Inbox
+                  {t('clientDashboard.inbox')}
                 </CardTitle>
                 <CardDescription>
-                  View and reply to incoming messages
+                  {t('clientDashboard.inboxDesc')}
                 </CardDescription>
               </CardHeader>
             </Link>
@@ -141,10 +141,10 @@ export default function ClientDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Contacts
+                  {t('clientDashboard.contacts')}
                 </CardTitle>
                 <CardDescription>
-                  Manage your contact list
+                  {t('clientDashboard.contactsDesc')}
                 </CardDescription>
               </CardHeader>
             </Link>
@@ -212,28 +212,28 @@ export default function ClientDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Pricing Information</CardTitle>
+              <CardTitle className="text-base">{t('clientDashboard.pricing')}</CardTitle>
               <CardDescription className="text-xs">
-                Your SMS pricing details
+                {t('clientDashboard.pricingDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Rate per SMS</p>
+                    <p className="text-xs text-muted-foreground">{t('clientDashboard.ratePerSms')}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold" data-testid="text-rate-per-sms">
                       ${parseFloat(ratePerSms).toFixed(4)}
                     </p>
-                    <p className="text-xs text-muted-foreground">per message</p>
+                    <p className="text-xs text-muted-foreground">{t('clientDashboard.perMessage')}</p>
                   </div>
                 </div>
                 {parseFloat(credits) > 0 && (
                   <div className="pt-3 border-t border-border">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Estimated messages:</span>
+                      <span className="text-muted-foreground">{t('clientDashboard.estimatedMessages')}:</span>
                       <span className="font-semibold" data-testid="text-messages-available">
                         ~{Math.floor(parseFloat(credits) / parseFloat(ratePerSms)).toLocaleString()}
                       </span>
