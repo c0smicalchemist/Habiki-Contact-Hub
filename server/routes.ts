@@ -1161,7 +1161,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check message status
+  // Get all sent messages with status (NEW ENDPOINT)
+  app.get("/api/v2/sms/messages", authenticateApiKey, async (req: any, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const messages = await storage.getMessageLogsByUserId(req.user.userId, limit);
+      
+      res.json({
+        success: true,
+        messages: messages.map(msg => ({
+          id: msg.id,
+          messageId: msg.messageId,
+          endpoint: msg.endpoint,
+          recipient: msg.recipient,
+          recipients: msg.recipients,
+          status: msg.status,
+          totalCost: msg.totalCost,
+          totalCharge: msg.totalCharge,
+          messageCount: msg.messageCount,
+          createdAt: msg.createdAt.toISOString(),
+          requestPayload: msg.requestPayload,
+          responsePayload: msg.responsePayload
+        })),
+        count: messages.length,
+        limit: limit
+      });
+    } catch (error) {
+      console.error("Messages fetch error:", error);
+      res.status(500).json({ success: false, error: "Failed to retrieve messages" });
+    }
+  });
+
+  // Check single message status by ID
   app.get("/api/v2/sms/status/:messageId", authenticateApiKey, async (req: any, res) => {
     try {
       const { messageId } = req.params;

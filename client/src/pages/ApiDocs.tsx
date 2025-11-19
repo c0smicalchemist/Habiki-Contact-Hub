@@ -65,6 +65,32 @@ export default function ApiDocs() {
     },
     {
       method: "GET" as const,
+      path: "/api/v2/sms/messages",
+      title: "Get All Sent Messages",
+      description: "Retrieve all messages sent by your account with their status. Returns up to 100 messages by default. Use the 'limit' query parameter to control the number of messages returned.",
+      requestExample: `curl -X GET "http://151.243.109.79/api/v2/sms/messages?limit=50" \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
+      responseExample: `{
+  "success": true,
+  "messages": [
+    {
+      "id": "msg_abc123",
+      "messageId": "60f1a5b3e6e7c12345678901",
+      "endpoint": "sendsingle",
+      "recipient": "${t('examples.phone.sample1')}",
+      "status": "delivered",
+      "totalCost": "0.05",
+      "totalCharge": "0.10",
+      "messageCount": 1,
+      "createdAt": "2025-11-18T10:30:00.000Z"
+    }
+  ],
+  "count": 1,
+  "limit": 50
+}`
+    },
+    {
+      method: "GET" as const,
       path: "/api/v2/sms/status/{messageId}",
       title: t('docs.checkDelivery.title'),
       description: t('docs.checkDelivery.description'),
