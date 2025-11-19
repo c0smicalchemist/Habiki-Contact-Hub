@@ -1050,7 +1050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add credits to client account (ADMIN ONLY)
+  // Add credits to client account (ADMIN ONLY) - Legacy endpoint
   app.post("/api/admin/add-credits", authenticateToken, requireAdmin, async (req: any, res) => {
     try {
       const { amount, userId } = req.body;
@@ -1094,6 +1094,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Add credits error:", error);
       res.status(500).json({ error: "Failed to add credits" });
+    }
+  });
+
+  // Adjust credits (add or deduct) for client account (ADMIN ONLY)
+  app.post("/api/admin/adjust-credits", authenticateToken, requireAdmin, async (req: any, res) => {
+    try {
+      const { amount, userId, operation } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!operation || (operation !== "add" && operation !== "deduct")) {
+        return res.status(400).json({ error: "operation must be 'add' or 'deduct'" });
+      }
+
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ error: "Invalid amount - must be positive number" });
+      }
+
+      // Get current profile
+      const profile = await storage.getClientProfileByUserId(userId);
+      if (!profile) {
+        return res.status(404).json({ error: "Client profile not found" });
+      }
+
+      const parsedAmount = parseFloat(amount);
+      const currentBalance = parseFloat(profile.credits);
+      const balanceBefore = profile.credits;
+
+      // Calculate new balance based on operation
+      let newBalance: string;
+      if (operation === "add") {
+        newBalance = (currentBalance + parsedAmount).toFixed(2);
+      } else {
+        // Check if deduction would result in negative balance
+        if (parsedAmount > currentBalance) {
+          return res.status(400).json({ 
+            error: "Insufficient balance",
+            message: `Cannot deduct $${amount}. Current balance is only $${currentBalance.toFixed(2)}`
+          });
+        }
+        newBalance = (currentBalance - parsedAmount).toFixed(2);
+      }
+      
+      // Update credits
+      await storage.updateClientCredits(userId, newBalance);
+
+      // Log the transaction
+      await storage.createCreditTransaction({
+        userId: userId,
+        amount: parsedAmount.toString(),
+        type: operation === "add" ? "admin_credit_add" : "admin_credit_deduct",
+        description: operation === "add" 
+          ? `Admin added $${amount} credits` 
+          : `Admin deducted $${amount} credits`,
+        balanceBefore: balanceBefore,
+        balanceAfter: newBalance
+      });
+
+      res.json({ 
+        success: true, 
+        message: operation === "add" ? "Credits added successfully" : "Credits deducted successfully",
+        newBalance,
+        operation
+      });
+    } catch (error) {
+      console.error("Adjust credits error:", error);
+      res.status(500).json({ error: "Failed to adjust credits" });
     }
   });
 
