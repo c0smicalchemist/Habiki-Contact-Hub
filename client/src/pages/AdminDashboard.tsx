@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatCard from "@/components/StatCard";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -24,7 +25,27 @@ export default function AdminDashboard() {
   const [extremeApiKey, setExtremeApiKey] = useState("");
   const [extremeCost, setExtremeCost] = useState("0.01");
   const [clientRate, setClientRate] = useState("0.02");
+  const [timezone, setTimezone] = useState("America/New_York");
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+
+  const usTimezones = [
+    { value: "America/New_York", label: "Eastern Time (ET)" },
+    { value: "America/Detroit", label: "Eastern Time - Michigan" },
+    { value: "America/Kentucky/Louisville", label: "Eastern Time - Louisville, KY" },
+    { value: "America/Indiana/Indianapolis", label: "Eastern Time - Indianapolis" },
+    { value: "America/Chicago", label: "Central Time (CT)" },
+    { value: "America/Indiana/Knox", label: "Central Time - Knox, IN" },
+    { value: "America/Menominee", label: "Central Time - Menominee, MI" },
+    { value: "America/North_Dakota/Center", label: "Central Time - North Dakota" },
+    { value: "America/Denver", label: "Mountain Time (MT)" },
+    { value: "America/Boise", label: "Mountain Time - Boise" },
+    { value: "America/Phoenix", label: "Mountain Time - Arizona (no DST)" },
+    { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
+    { value: "America/Anchorage", label: "Alaska Time (AKT)" },
+    { value: "America/Juneau", label: "Alaska Time - Juneau" },
+    { value: "America/Adak", label: "Hawaii-Aleutian Time (HAT)" },
+    { value: "Pacific/Honolulu", label: "Hawaii-Aleutian Time - Honolulu (no DST)" },
+  ];
 
   const { data: config } = useQuery<{ success: boolean; config: Record<string, string> }>({
     queryKey: ['/api/admin/config']
@@ -35,11 +56,12 @@ export default function AdminDashboard() {
       setExtremeApiKey(config.config.extreme_api_key || "");
       setExtremeCost(config.config.extreme_cost_per_sms || "0.01");
       setClientRate(config.config.client_rate_per_sms || "0.02");
+      setTimezone(config.config.timezone || "America/New_York");
     }
   }, [config]);
 
   const saveConfigMutation = useMutation({
-    mutationFn: async (data: { extremeApiKey?: string; extremeCost?: string; clientRate?: string }) => {
+    mutationFn: async (data: { extremeApiKey?: string; extremeCost?: string; clientRate?: string; timezone?: string }) => {
       return await apiRequest('/api/admin/config', {
         method: 'POST',
         body: JSON.stringify(data)
@@ -161,7 +183,8 @@ export default function AdminDashboard() {
     saveConfigMutation.mutate({
       extremeApiKey,
       extremeCost,
-      clientRate
+      clientRate,
+      timezone
     });
   };
 
@@ -360,6 +383,25 @@ export default function AdminDashboard() {
                   />
                   <p className="text-xs text-muted-foreground">
                     This key is used to authenticate with ExtremeSMS on behalf of all clients
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timezone">System Timezone</Label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger id="timezone" data-testid="select-timezone">
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usTimezones.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    All timestamps in the system will be displayed in this timezone
                   </p>
                 </div>
 

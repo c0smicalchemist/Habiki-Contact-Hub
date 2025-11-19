@@ -869,7 +869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update system configuration
   app.post("/api/admin/config", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      const { extremeApiKey, extremeCost, clientRate } = req.body;
+      const { extremeApiKey, extremeCost, clientRate, timezone } = req.body;
 
       if (extremeApiKey) {
         await storage.setSystemConfig("extreme_api_key", extremeApiKey);
@@ -879,6 +879,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (clientRate) {
         await storage.setSystemConfig("client_rate_per_sms", clientRate);
+      }
+      if (timezone) {
+        await storage.setSystemConfig("timezone", timezone);
       }
 
       res.json({ success: true, message: "Configuration updated" });
