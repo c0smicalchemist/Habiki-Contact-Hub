@@ -597,7 +597,7 @@ export class DbStorage implements IStorage {
     // Set default credits if not provided
     const result = await this.db.insert(clientProfiles).values({
       credits: '0.00',
-      markup: '0.00',
+      customMarkup: '0.00',
       assignedPhoneNumbers: [],
       ...profile
     }).returning();
