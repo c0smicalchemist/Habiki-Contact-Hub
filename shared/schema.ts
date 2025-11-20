@@ -43,6 +43,8 @@ export const clientProfiles = pgTable("client_profiles", {
   currency: text("currency").notNull().default("USD"),
   customMarkup: decimal("custom_markup", { precision: 10, scale: 4 }), // Optional custom markup for this client
   assignedPhoneNumbers: text("assigned_phone_numbers").array(), // Array of phone numbers assigned to this client for routing incoming SMS
+  rateLimitPerMinute: integer("rate_limit_per_minute").notNull().default(200), // Max messages per minute
+  businessName: text("business_name"), // Business name for 2-way SMS routing and contact tagging
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
