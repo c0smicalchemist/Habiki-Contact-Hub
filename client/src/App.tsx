@@ -17,6 +17,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Contacts from "@/pages/Contacts";
 import SendSMS from "@/pages/SendSMS";
 import Inbox from "@/pages/Inbox";
+import MessageHistory from "@/pages/MessageHistory";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/contacts" component={Contacts} />
       <Route path="/send-sms" component={SendSMS} />
       <Route path="/inbox" component={Inbox} />
+      <Route path="/message-history" component={MessageHistory} />
       <Route component={NotFound} />
     </Switch>
   );

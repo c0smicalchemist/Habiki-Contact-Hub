@@ -1,4 +1,4 @@
-import { MessageSquare, DollarSign, Activity, ArrowLeft, Inbox, Send, Users } from "lucide-react";
+import { MessageSquare, DollarSign, Activity, ArrowLeft, Inbox, Send, Users, Clock } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -110,7 +110,7 @@ export default function ClientDashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="hover-elevate active-elevate-2 cursor-pointer">
             <Link href="/send-sms">
               <CardHeader>
@@ -146,6 +146,19 @@ export default function ClientDashboard() {
                 </CardTitle>
                 <CardDescription>
                   {t('clientDashboard.contactsDesc')}
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+            <Link href="/message-history">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  {t('messageHistory.title')}
+                </CardTitle>
+                <CardDescription>
+                  {t('messageHistory.subtitle')}
                 </CardDescription>
               </CardHeader>
             </Link>
