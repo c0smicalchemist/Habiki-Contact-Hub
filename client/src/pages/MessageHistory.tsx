@@ -97,8 +97,12 @@ export default function MessageHistory() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate both general and specific parameterized queries
       queryClient.invalidateQueries({ queryKey: ['/api/client/messages'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/messages'] });
+      if (effectiveUserId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/messages', effectiveUserId] });
+      }
       toast({
         title: t('common.success'),
         description: "Status updated successfully",
