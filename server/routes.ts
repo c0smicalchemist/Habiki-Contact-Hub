@@ -2229,6 +2229,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get conversation history with a specific phone number
+  app.get("/api/web/inbox/conversation/:phoneNumber", authenticateToken, async (req: any, res) => {
+    try {
+      const { phoneNumber } = req.params;
+      
+      // Check if userId parameter is being used by non-admin
+      if (req.query.userId && req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized: Only admins can act on behalf of other users" });
+      }
+      
+      // Admin can query on behalf of another user
+      const targetUserId = (req.user.role === 'admin' && req.query.userId) 
+        ? req.query.userId 
+        : req.user.userId;
+      
+      const conversation = await storage.getConversationHistory(targetUserId, phoneNumber);
+      
+      res.json({
+        success: true,
+        conversation
+      });
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      res.status(500).json({ error: 'Failed to fetch conversation' });
+    }
+  });
+
+  // Mark conversation as read
+  app.post("/api/web/inbox/mark-read", authenticateToken, async (req: any, res) => {
+    try {
+      const { phoneNumber, userId } = req.body;
+      
+      // Check if userId parameter is being used by non-admin
+      if (userId && req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized: Only admins can act on behalf of other users" });
+      }
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ error: "Phone number is required" });
+      }
+      
+      // Admin can mark read on behalf of another user
+      const targetUserId = (req.user.role === 'admin' && userId) 
+        ? userId 
+        : req.user.userId;
+      
+      await storage.markConversationAsRead(targetUserId, phoneNumber);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+      res.status(500).json({ error: 'Failed to mark conversation as read' });
+    }
+  });
+
   // Reply to incoming message
   app.post("/api/web/inbox/reply", authenticateToken, async (req: any, res) => {
     try {
