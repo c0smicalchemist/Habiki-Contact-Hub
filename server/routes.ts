@@ -2069,6 +2069,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get contact sync statistics
+  app.get("/api/contacts/sync-stats", authenticateToken, async (req: any, res) => {
+    try {
+      // Check if userId parameter is being used by non-admin
+      if (req.query.userId && req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized: Only admins can act on behalf of other users" });
+      }
+      
+      // Admin can check stats for another user
+      const targetUserId = (req.user.role === 'admin' && req.query.userId) 
+        ? req.query.userId 
+        : req.user.userId;
+      
+      const stats = await storage.getSyncStats(targetUserId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Get sync stats error:", error);
+      res.status(500).json({ error: "Failed to get sync statistics" });
+    }
+  });
+
   // Web UI SMS Sending (calls ExtremeSMS via existing proxy logic)
   app.post("/api/web/sms/send-single", authenticateToken, async (req: any, res) => {
     try {
@@ -2129,6 +2150,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Recipients array and message are required" });
       }
 
+      // Enforce 3000 number limit for bulk sending
+      if (recipients.length > 3000) {
+        return res.status(400).json({ error: "Maximum 3000 recipients allowed per bulk send. Please split into multiple batches." });
+      }
+
       // Admin can send on behalf of another user
       const targetUserId = (req.user.role === 'admin' && userId) 
         ? userId 
@@ -2174,6 +2200,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return res.status(400).json({ error: "Messages array is required" });
+      }
+
+      // Enforce 3000 number limit for bulk multi sending
+      if (messages.length > 3000) {
+        return res.status(400).json({ error: "Maximum 3000 messages allowed per bulk send. Please split into multiple batches." });
       }
 
       // Admin can send on behalf of another user

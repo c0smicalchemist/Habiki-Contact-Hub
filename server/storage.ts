@@ -501,6 +501,7 @@ export class MemStorage implements IStorage {
       matchedBlockWord: insertMessage.matchedBlockWord ?? null,
       usedmodem: insertMessage.usedmodem ?? null,
       port: insertMessage.port ?? null,
+      isRead: false,
       createdAt: new Date()
     };
     this.incomingMessages.set(id, message);
@@ -660,6 +661,8 @@ export class MemStorage implements IStorage {
       name: insertContact.name ?? null,
       email: insertContact.email ?? null,
       notes: insertContact.notes ?? null,
+      syncedToExtremeSMS: false,
+      lastExportedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
