@@ -117,6 +117,8 @@ export interface IStorage {
   updateContact(id: string, updates: Partial<Contact>): Promise<Contact | undefined>;
   deleteContact(id: string): Promise<void>;
   deleteContactsByGroupId(groupId: string): Promise<void>;
+  markContactsAsExported(contactIds: string[]): Promise<void>; // Mark contacts as synced to ExtremeSMS
+  getSyncStats(userId: string): Promise<{ total: number; synced: number; unsynced: number }>; // Get sync statistics
   
   // Error logging methods
   getErrorLogs(level?: string): Promise<any[]>;
@@ -708,6 +710,28 @@ export class MemStorage implements IStorage {
     }
   }
 
+  async markContactsAsExported(contactIds: string[]): Promise<void> {
+    for (const id of contactIds) {
+      const contact = this.contacts.get(id);
+      if (contact) {
+        this.contacts.set(id, {
+          ...contact,
+          syncedToExtremeSMS: true,
+          lastExportedAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    }
+  }
+
+  async getSyncStats(userId: string): Promise<{ total: number; synced: number; unsynced: number }> {
+    const userContacts = Array.from(this.contacts.values()).filter(c => c.userId === userId);
+    const total = userContacts.length;
+    const synced = userContacts.filter(c => c.syncedToExtremeSMS).length;
+    const unsynced = total - synced;
+    return { total, synced, unsynced };
+  }
+
   // Error logging methods
   async getErrorLogs(level?: string): Promise<any[]> {
     // Get failed message logs as error logs
@@ -1211,6 +1235,25 @@ export class DbStorage implements IStorage {
 
   async deleteContactsByGroupId(groupId: string): Promise<void> {
     await this.db.delete(contacts).where(eq(contacts.groupId, groupId));
+  }
+
+  async markContactsAsExported(contactIds: string[]): Promise<void> {
+    if (contactIds.length === 0) return;
+    await this.db.update(contacts)
+      .set({ 
+        syncedToExtremeSMS: true,
+        lastExportedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(sql`${contacts.id} IN (${sql.join(contactIds.map(id => sql`${id}`), sql`, `)})`);
+  }
+
+  async getSyncStats(userId: string): Promise<{ total: number; synced: number; unsynced: number }> {
+    const allContacts = await this.db.select().from(contacts).where(eq(contacts.userId, userId));
+    const total = allContacts.length;
+    const synced = allContacts.filter(c => c.syncedToExtremeSMS).length;
+    const unsynced = total - synced;
+    return { total, synced, unsynced };
   }
 
   // Error logging methods

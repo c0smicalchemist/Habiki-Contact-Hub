@@ -162,12 +162,15 @@ export const contacts = pgTable("contacts", {
   name: text("name"),
   email: text("email"),
   notes: text("notes"),
+  syncedToExtremeSMS: boolean("synced_to_extremesms").notNull().default(false), // Track if exported to ExtremeSMS
+  lastExportedAt: timestamp("last_exported_at"), // When this contact was last exported
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index("contacts_user_id_idx").on(table.userId),
   groupIdIdx: index("contacts_group_id_idx").on(table.groupId),
   phoneIdx: index("contacts_phone_idx").on(table.phoneNumber),
+  syncedIdx: index("contacts_synced_idx").on(table.syncedToExtremeSMS),
 }));
 
 // Zod schemas and types

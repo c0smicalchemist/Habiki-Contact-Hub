@@ -2053,6 +2053,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const csvContent = csvRows.join('\n');
       
+      // Mark all exported contacts as synced to ExtremeSMS
+      const contactIds = contacts.map((c: any) => c.id);
+      if (contactIds.length > 0) {
+        await storage.markContactsAsExported(contactIds);
+      }
+      
       // Set headers for CSV download
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=contacts-export.csv');
