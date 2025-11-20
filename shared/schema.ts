@@ -73,12 +73,14 @@ export const messageLogs = pgTable("message_logs", {
   messageCount: integer("message_count").notNull().default(1),
   requestPayload: text("request_payload"), // JSON string
   responsePayload: text("response_payload"), // JSON string
+  isExample: boolean("is_example").notNull().default(false), // Mark as example data for UI preview
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index("message_user_id_idx").on(table.userId),
   createdAtIdx: index("message_created_at_idx").on(table.createdAt),
   messageIdIdx: index("message_id_idx").on(table.messageId),
   senderPhoneIdx: index("message_sender_phone_idx").on(table.senderPhoneNumber),
+  isExampleIdx: index("message_is_example_idx").on(table.isExample),
 }));
 
 // Credit transactions for audit trail
@@ -114,6 +116,7 @@ export const incomingMessages = pgTable("incoming_messages", {
   timestamp: timestamp("timestamp").notNull(), // From ExtremeSMS
   messageId: text("message_id").notNull(), // ExtremeSMS message ID
   isRead: boolean("is_read").notNull().default(false), // Track if message has been read
+  isExample: boolean("is_example").notNull().default(false), // Mark as example data for UI preview
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index("incoming_user_id_idx").on(table.userId),
@@ -121,6 +124,7 @@ export const incomingMessages = pgTable("incoming_messages", {
   timestampIdx: index("incoming_timestamp_idx").on(table.timestamp),
   messageIdIdx: index("incoming_message_id_idx").on(table.messageId),
   fromIdx: index("incoming_from_idx").on(table.from),
+  isExampleIdx: index("incoming_is_example_idx").on(table.isExample),
 }));
 
 // Client contacts for routing (stores contact phone → client_id mapping)
@@ -164,6 +168,7 @@ export const contacts = pgTable("contacts", {
   notes: text("notes"),
   syncedToExtremeSMS: boolean("synced_to_extremesms").notNull().default(false), // Track if exported to ExtremeSMS
   lastExportedAt: timestamp("last_exported_at"), // When this contact was last exported
+  isExample: boolean("is_example").notNull().default(false), // Mark as example data for UI preview
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
@@ -171,6 +176,7 @@ export const contacts = pgTable("contacts", {
   groupIdIdx: index("contacts_group_id_idx").on(table.groupId),
   phoneIdx: index("contacts_phone_idx").on(table.phoneNumber),
   syncedIdx: index("contacts_synced_idx").on(table.syncedToExtremeSMS),
+  isExampleIdx: index("contacts_is_example_idx").on(table.isExample),
 }));
 
 // Zod schemas and types

@@ -8,6 +8,7 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { AddCreditsDialog } from "@/components/AddCreditsDialog";
 import { ApiKeysManagement } from "@/components/ApiKeysManagement";
 import { WorldClock } from "@/components/WorldClock";
+import { MessageStatusChart } from "@/components/MessageStatusChart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -165,7 +166,10 @@ export default function ClientDashboard() {
           </Card>
         </div>
 
-        <WorldClock />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <WorldClock />
+          <MessageStatusChart />
+        </div>
 
         <Card>
           <CardHeader>

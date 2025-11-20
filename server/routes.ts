@@ -239,6 +239,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       });
 
+      // Seed example data for new users
+      try {
+        await storage.seedExampleData(user.id);
+      } catch (error) {
+        console.error("Failed to seed example data:", error);
+        // Don't fail signup if example data seeding fails
+      }
+
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
       res.json({
@@ -530,6 +538,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Profile fetch error:", error);
       res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  // Get message status statistics
+  app.get("/api/message-status-stats", authenticateToken, async (req: any, res) => {
+    try {
+      // Check if userId parameter is being used by non-admin
+      if (req.query.userId && req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized: Only admins can act on behalf of other users" });
+      }
+      
+      // Admin can check stats for another user
+      const targetUserId = (req.user.role === 'admin' && req.query.userId) 
+        ? req.query.userId 
+        : req.user.userId;
+      
+      const stats = await storage.getMessageStatusStats(targetUserId);
+      res.json({ success: true, stats });
+    } catch (error) {
+      console.error("Get message status stats error:", error);
+      res.status(500).json({ error: "Failed to get message status statistics" });
     }
   });
 

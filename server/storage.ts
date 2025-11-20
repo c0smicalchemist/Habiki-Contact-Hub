@@ -125,6 +125,10 @@ export interface IStorage {
   
   // Stats methods
   getTotalMessageCount(): Promise<number>;
+  getMessageStatusStats(userId: string): Promise<{ sent: number; delivered: number; failed: number }>; // Get message status statistics
+  
+  // Example/Seed data methods
+  seedExampleData(userId: string): Promise<void>; // Add example data for new users
 }
 
 export class MemStorage implements IStorage {
@@ -404,6 +408,7 @@ export class MemStorage implements IStorage {
       senderPhoneNumber: insertLog.senderPhoneNumber ?? null,
       requestPayload: insertLog.requestPayload ?? null,
       responsePayload: insertLog.responsePayload ?? null,
+      isExample: insertLog.isExample ?? false,
       createdAt: new Date()
     };
     this.messageLogs.set(id, log);
@@ -467,6 +472,61 @@ export class MemStorage implements IStorage {
     return this.messageLogs.size;
   }
 
+  async getMessageStatusStats(userId: string): Promise<{ sent: number; delivered: number; failed: number }> {
+    const logs = Array.from(this.messageLogs.values())
+      .filter((log) => log.userId === userId && !log.isExample);
+    
+    const sent = logs.filter((log) => log.status === 'sent' || log.status === 'queued').length;
+    const delivered = logs.filter((log) => log.status === 'delivered').length;
+    const failed = logs.filter((log) => log.status === 'failed').length;
+    
+    return { sent, delivered, failed };
+  }
+
+  async seedExampleData(userId: string): Promise<void> {
+    // Add one example contact
+    await this.createContact({
+      userId,
+      phoneNumber: '+1-555-0123',
+      name: 'Example Contact',
+      email: 'example@demo.com',
+      notes: 'This is an example contact for demonstration purposes',
+      syncedToExtremeSMS: true,
+      lastExportedAt: new Date(),
+      isExample: true
+    });
+
+    // Add one example sent message
+    await this.createMessageLog({
+      userId,
+      messageId: 'example-msg-001',
+      endpoint: 'send-single',
+      recipient: '+1-555-0123',
+      status: 'delivered',
+      costPerMessage: '0.0050',
+      chargePerMessage: '0.0075',
+      totalCost: '0.01',
+      totalCharge: '0.01',
+      messageCount: 1,
+      requestPayload: JSON.stringify({ to: '+1-555-0123', message: 'Hello! This is an example message.' }),
+      responsePayload: JSON.stringify({ success: true }),
+      isExample: true
+    });
+
+    // Add one example incoming message
+    await this.createIncomingMessage({
+      userId,
+      from: '+1-555-0123',
+      message: 'Hi! This is an example incoming message.',
+      status: 'received',
+      receiver: '+1-555-9999',
+      timestamp: new Date(),
+      messageId: 'example-incoming-001',
+      isRead: false,
+      isExample: true
+    });
+  }
+
   // Credit Transaction methods
   async createCreditTransaction(insertTransaction: InsertCreditTransaction): Promise<CreditTransaction> {
     const id = randomUUID();
@@ -501,7 +561,8 @@ export class MemStorage implements IStorage {
       matchedBlockWord: insertMessage.matchedBlockWord ?? null,
       usedmodem: insertMessage.usedmodem ?? null,
       port: insertMessage.port ?? null,
-      isRead: false,
+      isRead: insertMessage.isRead ?? false,
+      isExample: insertMessage.isExample ?? false,
       createdAt: new Date()
     };
     this.incomingMessages.set(id, message);
@@ -661,8 +722,9 @@ export class MemStorage implements IStorage {
       name: insertContact.name ?? null,
       email: insertContact.email ?? null,
       notes: insertContact.notes ?? null,
-      syncedToExtremeSMS: false,
-      lastExportedAt: null,
+      syncedToExtremeSMS: insertContact.syncedToExtremeSMS ?? false,
+      lastExportedAt: insertContact.lastExportedAt ?? null,
+      isExample: insertContact.isExample ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -1298,6 +1360,61 @@ export class DbStorage implements IStorage {
   async getTotalMessageCount(): Promise<number> {
     const result = await this.db.select({ count: sql<number>`count(*)` }).from(messageLogs);
     return Number(result[0].count);
+  }
+
+  async getMessageStatusStats(userId: string): Promise<{ sent: number; delivered: number; failed: number }> {
+    const logs = await this.db.select().from(messageLogs)
+      .where(sql`${messageLogs.userId} = ${userId} AND ${messageLogs.isExample} = false`);
+    
+    const sent = logs.filter((log) => log.status === 'sent' || log.status === 'queued').length;
+    const delivered = logs.filter((log) => log.status === 'delivered').length;
+    const failed = logs.filter((log) => log.status === 'failed').length;
+    
+    return { sent, delivered, failed };
+  }
+
+  async seedExampleData(userId: string): Promise<void> {
+    // Add one example contact
+    await this.db.insert(contacts).values({
+      userId,
+      phoneNumber: '+1-555-0123',
+      name: 'Example Contact',
+      email: 'example@demo.com',
+      notes: 'This is an example contact for demonstration purposes',
+      syncedToExtremeSMS: true,
+      lastExportedAt: new Date(),
+      isExample: true
+    });
+
+    // Add one example sent message
+    await this.db.insert(messageLogs).values({
+      userId,
+      messageId: 'example-msg-001',
+      endpoint: 'send-single',
+      recipient: '+1-555-0123',
+      status: 'delivered',
+      costPerMessage: '0.0050',
+      chargePerMessage: '0.0075',
+      totalCost: '0.01',
+      totalCharge: '0.01',
+      messageCount: 1,
+      requestPayload: JSON.stringify({ to: '+1-555-0123', message: 'Hello! This is an example message.' }),
+      responsePayload: JSON.stringify({ success: true }),
+      isExample: true
+    });
+
+    // Add one example incoming message
+    await this.db.insert(incomingMessages).values({
+      userId,
+      from: '+1-555-0123',
+      message: 'Hi! This is an example incoming message.',
+      status: 'received',
+      receiver: '+1-555-9999',
+      timestamp: new Date(),
+      messageId: 'example-incoming-001',
+      isRead: false,
+      isExample: true
+    });
   }
 }
 

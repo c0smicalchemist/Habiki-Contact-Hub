@@ -18,6 +18,8 @@ import { Link } from "wouter";
 import ApiTestUtility from "@/components/ApiTestUtility";
 import ErrorLogsViewer from "@/components/ErrorLogsViewer";
 import { AddCreditsToClientDialog } from "@/components/AddCreditsToClientDialog";
+import { WorldClock } from "@/components/WorldClock";
+import { MessageStatusChart } from "@/components/MessageStatusChart";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -336,6 +338,11 @@ export default function AdminDashboard() {
               </CardHeader>
             </Link>
           </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <WorldClock />
+          <MessageStatusChart />
         </div>
 
         <Tabs defaultValue="clients" data-testid="tabs-admin">
