@@ -63,6 +63,8 @@ export interface IStorage {
   createClientProfile(profile: InsertClientProfile): Promise<ClientProfile>;
   updateClientCredits(userId: string, newCredits: string): Promise<ClientProfile | undefined>;
   updateClientPhoneNumbers(userId: string, phoneNumbers: string[]): Promise<ClientProfile | undefined>;
+  updateClientRateLimit(userId: string, rateLimitPerMinute: number): Promise<ClientProfile | undefined>;
+  updateClientBusinessName(userId: string, businessName: string | null): Promise<ClientProfile | undefined>;
   
   // System Config methods
   getSystemConfig(key: string): Promise<SystemConfig | undefined>;
@@ -291,6 +293,8 @@ export class MemStorage implements IStorage {
       currency: insertProfile.currency ?? "USD",
       customMarkup: insertProfile.customMarkup ?? null,
       assignedPhoneNumbers: insertProfile.assignedPhoneNumbers ?? null,
+      rateLimitPerMinute: insertProfile.rateLimitPerMinute ?? 200,
+      businessName: insertProfile.businessName ?? null,
       updatedAt: new Date()
     };
     this.clientProfiles.set(id, profile);
@@ -322,6 +326,30 @@ export class MemStorage implements IStorage {
     if (!profile) return undefined;
 
     profile.assignedPhoneNumbers = phoneNumbers.length > 0 ? phoneNumbers : null;
+    profile.updatedAt = new Date();
+    this.clientProfiles.set(profile.id, profile);
+    return profile;
+  }
+
+  async updateClientRateLimit(userId: string, rateLimitPerMinute: number): Promise<ClientProfile | undefined> {
+    const profile = Array.from(this.clientProfiles.values()).find(
+      (p) => p.userId === userId,
+    );
+    if (!profile) return undefined;
+
+    profile.rateLimitPerMinute = rateLimitPerMinute;
+    profile.updatedAt = new Date();
+    this.clientProfiles.set(profile.id, profile);
+    return profile;
+  }
+
+  async updateClientBusinessName(userId: string, businessName: string | null): Promise<ClientProfile | undefined> {
+    const profile = Array.from(this.clientProfiles.values()).find(
+      (p) => p.userId === userId,
+    );
+    if (!profile) return undefined;
+
+    profile.businessName = businessName;
     profile.updatedAt = new Date();
     this.clientProfiles.set(profile.id, profile);
     return profile;
@@ -560,6 +588,7 @@ export class MemStorage implements IStorage {
       ...insertGroup,
       id,
       description: insertGroup.description ?? null,
+      businessUnitPrefix: insertGroup.businessUnitPrefix ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -851,6 +880,22 @@ export class DbStorage implements IStorage {
   async updateClientPhoneNumbers(userId: string, phoneNumbers: string[]): Promise<ClientProfile | undefined> {
     const result = await this.db.update(clientProfiles)
       .set({ assignedPhoneNumbers: phoneNumbers })
+      .where(eq(clientProfiles.userId, userId))
+      .returning();
+    return result[0];
+  }
+
+  async updateClientRateLimit(userId: string, rateLimitPerMinute: number): Promise<ClientProfile | undefined> {
+    const result = await this.db.update(clientProfiles)
+      .set({ rateLimitPerMinute: rateLimitPerMinute, updatedAt: new Date() })
+      .where(eq(clientProfiles.userId, userId))
+      .returning();
+    return result[0];
+  }
+
+  async updateClientBusinessName(userId: string, businessName: string | null): Promise<ClientProfile | undefined> {
+    const result = await this.db.update(clientProfiles)
+      .set({ businessName: businessName, updatedAt: new Date() })
       .where(eq(clientProfiles.userId, userId))
       .returning();
     return result[0];

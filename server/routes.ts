@@ -836,6 +836,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: apiKeys.length > 0 && apiKeys[0].isActive ? 'active' : 'inactive',
               messagesSent: messageLogs.length,
               credits: profile?.credits || "0.00",
+              rateLimitPerMinute: profile?.rateLimitPerMinute || 200,
+              businessName: profile?.businessName || null,
               lastActive: apiKeys[0]?.lastUsedAt 
                 ? new Date(apiKeys[0].lastUsedAt).toLocaleDateString()
                 : 'Never',
@@ -1213,6 +1215,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Update phone numbers error:", error);
       res.status(500).json({ error: "Failed to update phone numbers" });
+    }
+  });
+
+  // Update client's rate limit (ADMIN ONLY)
+  app.post("/api/admin/update-rate-limit", authenticateToken, requireAdmin, async (req: any, res) => {
+    try {
+      const { userId, rateLimitPerMinute } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!rateLimitPerMinute || rateLimitPerMinute < 1) {
+        return res.status(400).json({ error: "rateLimitPerMinute must be at least 1" });
+      }
+
+      const profile = await storage.getClientProfileByUserId(userId);
+      if (!profile) {
+        return res.status(404).json({ error: "Client profile not found" });
+      }
+
+      // Update rate limit
+      await storage.updateClientRateLimit(userId, rateLimitPerMinute);
+
+      res.json({ 
+        success: true, 
+        message: `Rate limit updated to ${rateLimitPerMinute} messages/minute`,
+        rateLimitPerMinute
+      });
+    } catch (error) {
+      console.error("Update rate limit error:", error);
+      res.status(500).json({ error: "Failed to update rate limit" });
+    }
+  });
+
+  // Update client's business name (ADMIN ONLY)
+  app.post("/api/admin/update-business-name", authenticateToken, requireAdmin, async (req: any, res) => {
+    try {
+      const { userId, businessName } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      const profile = await storage.getClientProfileByUserId(userId);
+      if (!profile) {
+        return res.status(404).json({ error: "Client profile not found" });
+      }
+
+      // Update business name
+      await storage.updateClientBusinessName(userId, businessName || null);
+
+      res.json({ 
+        success: true, 
+        message: businessName ? `Business name updated to "${businessName}"` : "Business name cleared",
+        businessName
+      });
+    } catch (error) {
+      console.error("Update business name error:", error);
+      res.status(500).json({ error: "Failed to update business name" });
     }
   });
 

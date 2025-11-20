@@ -116,6 +116,8 @@ export default function AdminDashboard() {
     credits: string;
     lastActive: string;
     assignedPhoneNumbers: string[];
+    rateLimitPerMinute: number;
+    businessName: string | null;
   }> }>({
     queryKey: ['/api/admin/clients']
   });
@@ -138,6 +140,52 @@ export default function AdminDashboard() {
       toast({
         title: "Error",
         description: t("admin.config.error.updatePhonesFailed"),
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateRateLimitMutation = useMutation({
+    mutationFn: async ({ userId, rateLimit }: { userId: string; rateLimit: number }) => {
+      return await apiRequest('/api/admin/update-rate-limit', {
+        method: 'POST',
+        body: JSON.stringify({ userId, rateLimitPerMinute: rateLimit })
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/clients'] });
+      toast({
+        title: t('common.success'),
+        description: "Rate limit updated successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update rate limit",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateBusinessNameMutation = useMutation({
+    mutationFn: async ({ userId, businessName }: { userId: string; businessName: string }) => {
+      return await apiRequest('/api/admin/update-business-name', {
+        method: 'POST',
+        body: JSON.stringify({ userId, businessName })
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/clients'] });
+      toast({
+        title: t('common.success'),
+        description: "Business name updated successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update business name",
         variant: "destructive"
       });
     }
@@ -316,6 +364,8 @@ export default function AdminDashboard() {
                     <TableHead>Status</TableHead>
                     <TableHead>Messages Sent</TableHead>
                     <TableHead>Credits</TableHead>
+                    <TableHead>{t('admin.clients.table.rateLimit')}</TableHead>
+                    <TableHead>{t('admin.clients.table.businessName')}</TableHead>
                     <TableHead>Assigned Numbers</TableHead>
                     <TableHead>Last Active</TableHead>
                     <TableHead>Actions</TableHead>
@@ -337,6 +387,47 @@ export default function AdminDashboard() {
                         <span className="font-mono font-semibold" data-testid={`text-credits-${client.id}`}>
                           ${parseFloat(client.credits).toFixed(2)}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          placeholder="200"
+                          defaultValue={client.rateLimitPerMinute}
+                          onBlur={(e) => {
+                            const newLimit = parseInt(e.target.value);
+                            if (!isNaN(newLimit) && newLimit !== client.rateLimitPerMinute) {
+                              updateRateLimitMutation.mutate({ 
+                                userId: client.id, 
+                                rateLimit: newLimit 
+                              });
+                            }
+                          }}
+                          className="w-24"
+                          data-testid={`input-rate-limit-${client.id}`}
+                          title={t('admin.clients.rateLimit.description')}
+                          min="1"
+                          max="10000"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          placeholder={t('admin.clients.businessName.placeholder')}
+                          defaultValue={client.businessName || ''}
+                          onBlur={(e) => {
+                            const newBusinessName = e.target.value.trim();
+                            const currentBusinessName = client.businessName || '';
+                            if (newBusinessName !== currentBusinessName) {
+                              updateBusinessNameMutation.mutate({ 
+                                userId: client.id, 
+                                businessName: newBusinessName 
+                              });
+                            }
+                          }}
+                          className="w-36"
+                          data-testid={`input-business-name-${client.id}`}
+                          title={t('admin.clients.businessName.description')}
+                        />
                       </TableCell>
                       <TableCell>
                         <Input
