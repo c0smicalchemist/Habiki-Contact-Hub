@@ -88,6 +88,9 @@ export interface IStorage {
   createIncomingMessage(message: InsertIncomingMessage): Promise<IncomingMessage>;
   getIncomingMessagesByUserId(userId: string, limit?: number): Promise<IncomingMessage[]>;
   getAllIncomingMessages(limit?: number): Promise<IncomingMessage[]>;
+  markIncomingMessageAsRead(messageId: string): Promise<void>;
+  markConversationAsRead(userId: string, phoneNumber: string): Promise<void>;
+  getConversationHistory(userId: string, phoneNumber: string): Promise<{ incoming: IncomingMessage[]; outgoing: MessageLog[] }>;
   
   // Client Contact methods (for Business field routing)
   createClientContact(contact: InsertClientContact): Promise<ClientContact>;
@@ -515,6 +518,35 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     
     return limit ? messages.slice(0, limit) : messages;
+  }
+
+  async markIncomingMessageAsRead(messageId: string): Promise<void> {
+    const message = this.incomingMessages.get(messageId);
+    if (message) {
+      message.isRead = true;
+      this.incomingMessages.set(messageId, message);
+    }
+  }
+
+  async markConversationAsRead(userId: string, phoneNumber: string): Promise<void> {
+    const messages = Array.from(this.incomingMessages.values())
+      .filter((msg) => msg.userId === userId && msg.from === phoneNumber);
+    for (const message of messages) {
+      message.isRead = true;
+      this.incomingMessages.set(message.id, message);
+    }
+  }
+
+  async getConversationHistory(userId: string, phoneNumber: string): Promise<{ incoming: IncomingMessage[]; outgoing: MessageLog[] }> {
+    const incoming = Array.from(this.incomingMessages.values())
+      .filter((msg) => msg.userId === userId && msg.from === phoneNumber)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    
+    const outgoing = Array.from(this.messageLogs.values())
+      .filter((msg) => msg.userId === userId && msg.recipient === phoneNumber)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    
+    return { incoming, outgoing };
   }
 
   // Client Contact methods (for Business field routing)
@@ -1038,6 +1070,38 @@ export class DbStorage implements IStorage {
     }
     
     return query;
+  }
+
+  async markIncomingMessageAsRead(messageId: string): Promise<void> {
+    await this.db.update(incomingMessages)
+      .set({ isRead: true })
+      .where(eq(incomingMessages.id, messageId));
+  }
+
+  async markConversationAsRead(userId: string, phoneNumber: string): Promise<void> {
+    await this.db.update(incomingMessages)
+      .set({ isRead: true })
+      .where(
+        sql`${incomingMessages.userId} = ${userId} AND ${incomingMessages.from} = ${phoneNumber}`
+      );
+  }
+
+  async getConversationHistory(userId: string, phoneNumber: string): Promise<{ incoming: IncomingMessage[]; outgoing: MessageLog[] }> {
+    const incoming = await this.db.select()
+      .from(incomingMessages)
+      .where(
+        sql`${incomingMessages.userId} = ${userId} AND ${incomingMessages.from} = ${phoneNumber}`
+      )
+      .orderBy(incomingMessages.timestamp);
+    
+    const outgoing = await this.db.select()
+      .from(messageLogs)
+      .where(
+        sql`${messageLogs.userId} = ${userId} AND ${messageLogs.recipient} = ${phoneNumber}`
+      )
+      .orderBy(messageLogs.createdAt);
+    
+    return { incoming, outgoing };
   }
 
   // Client Contact methods (for Business field routing)

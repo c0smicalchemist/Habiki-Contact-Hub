@@ -113,6 +113,7 @@ export const incomingMessages = pgTable("incoming_messages", {
   port: text("port"),
   timestamp: timestamp("timestamp").notNull(), // From ExtremeSMS
   messageId: text("message_id").notNull(), // ExtremeSMS message ID
+  isRead: boolean("is_read").notNull().default(false), // Track if message has been read
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index("incoming_user_id_idx").on(table.userId),
