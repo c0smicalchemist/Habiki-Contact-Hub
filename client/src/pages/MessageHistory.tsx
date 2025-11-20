@@ -69,6 +69,18 @@ export default function MessageHistory() {
     queryKey: effectiveUserId 
       ? ['/api/admin/messages', effectiveUserId]
       : ['/api/client/messages'],
+    queryFn: async () => {
+      const endpoint = effectiveUserId 
+        ? `/api/admin/messages?userId=${effectiveUserId}`
+        : '/api/client/messages';
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      return response.json();
+    },
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
@@ -103,11 +115,21 @@ export default function MessageHistory() {
 
   const messages = messagesData?.messages || [];
 
+  // Safe JSON parse helper
+  const safeJsonParse = (jsonString: string | null): any => {
+    if (!jsonString) return null;
+    try {
+      return JSON.parse(jsonString);
+    } catch {
+      return null;
+    }
+  };
+
   // Filter messages based on search query
   const filteredMessages = messages.filter(msg => {
     const searchLower = searchQuery.toLowerCase();
     const recipient = msg.recipient || (msg.recipients && msg.recipients.length > 0 ? msg.recipients.join(', ') : '');
-    const requestData = msg.requestPayload ? JSON.parse(msg.requestPayload) : null;
+    const requestData = safeJsonParse(msg.requestPayload);
     const message = requestData?.message || requestData?.messages || '';
     
     return recipient.toLowerCase().includes(searchLower) ||
@@ -122,6 +144,22 @@ export default function MessageHistory() {
 
   const getStatusBadge = (status: string) => {
     const statusLower = status.toLowerCase();
+    
+    // Color mapping: queued=yellow, sent=blue, delivered=green, failed=red
+    if (statusLower.includes('queue')) {
+      return <Badge className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">{status}</Badge>;
+    }
+    if (statusLower.includes('sent') || statusLower.includes('pending')) {
+      return <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400">{status}</Badge>;
+    }
+    if (statusLower.includes('deliver') || statusLower.includes('success')) {
+      return <Badge className="bg-green-500/10 text-green-600 dark:text-green-400">{status}</Badge>;
+    }
+    if (statusLower.includes('fail') || statusLower.includes('error')) {
+      return <Badge className="bg-red-500/10 text-red-600 dark:text-red-400">{status}</Badge>;
+    }
+    
+    // Default fallback
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       'queued': 'secondary',
       'sent': 'default',
@@ -148,16 +186,14 @@ export default function MessageHistory() {
   };
 
   const getMessagePreview = (msg: MessageLog) => {
-    try {
-      const requestData = msg.requestPayload ? JSON.parse(msg.requestPayload) : null;
-      const message = requestData?.message || requestData?.messages || '';
-      if (Array.isArray(message)) {
-        return message[0]?.message || 'Multiple messages';
-      }
-      return message.length > 50 ? message.substring(0, 50) + '...' : message;
-    } catch {
-      return 'N/A';
+    const requestData = safeJsonParse(msg.requestPayload);
+    if (!requestData) return 'N/A';
+    
+    const message = requestData?.message || requestData?.messages || '';
+    if (Array.isArray(message)) {
+      return message[0]?.message || 'Multiple messages';
     }
+    return message.length > 50 ? message.substring(0, 50) + '...' : message;
   };
 
   const getRecipientDisplay = (msg: MessageLog) => {
