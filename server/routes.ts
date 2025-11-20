@@ -2138,15 +2138,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? userId 
         : req.user.userId;
 
-      const { extremeUsername, extremePassword } = await getExtremeSMSCredentials();
-      
-      const response = await axios.post('https://extremesms.net/api2/api/sms/send-single', {
-        username: extremeUsername,
-        password: extremePassword,
-        to,
-        message
-      });
+      const extremeApiKey = await getExtremeApiKey();
 
+      const response = await axios.post(
+        `${EXTREMESMS_BASE_URL}/api/v2/sms/sendsingle`,
+        { recipient: to, message },
+        {
+          headers: {
+            "Authorization": `Bearer ${extremeApiKey}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+        
       // Deduct credits and log using targetUserId
       await deductCreditsAndLog(
         targetUserId,
@@ -2164,7 +2168,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Web UI send single error:", error);
       res.status(500).json({ error: error.message || "Failed to send SMS" });
     }
-  });
 
   app.post("/api/web/sms/send-bulk", authenticateToken, async (req: any, res) => {
     try {
@@ -2189,7 +2192,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? userId 
         : req.user.userId;
 
-      const { extremeUsername, extremePassword } = await getExtremeSMSCredentials();
       
       const response = await axios.post('${EXTREMESMS_BASE_URL}/api/v2/sms/sendbulk', {
         username: extremeUsername,
@@ -2265,7 +2267,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Web UI send bulk multi error:", error);
       res.status(500).json({ error: error.message || "Failed to send bulk multi SMS" });
     }
-  });
 
   // Web UI Inbox
   app.get("/api/web/inbox", authenticateToken, async (req: any, res) => {
@@ -2399,4 +2400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+  
+})
+})
 }
