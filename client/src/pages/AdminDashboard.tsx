@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Settings, Activity, ArrowLeft, Wallet, Copy, CheckCircle, Send, Inbox as InboxIcon } from "lucide-react";
+import { Users, Settings, Activity, ArrowLeft, Wallet, Copy, CheckCircle, Send, Inbox as InboxIcon, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="hover-elevate active-elevate-2 cursor-pointer">
             <Link href="/send-sms">
               <CardHeader>
@@ -271,6 +271,19 @@ export default function AdminDashboard() {
                 </CardTitle>
                 <CardDescription>
                   Manage your contact list
+                </CardDescription>
+              </CardHeader>
+            </Link>
+          </Card>
+          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+            <Link href="/message-history">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Message History
+                </CardTitle>
+                <CardDescription>
+                  Track delivery status and history
                 </CardDescription>
               </CardHeader>
             </Link>
