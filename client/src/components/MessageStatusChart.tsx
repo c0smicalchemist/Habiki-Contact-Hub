@@ -45,7 +45,7 @@ export function MessageStatusChart({ userId }: MessageStatusChartProps) {
   };
 
   return (
-    <Card className="flex flex-col" data-testid="card-message-status-chart">
+    <Card className="flex flex-col border border-border/60 shadow-sm" data-testid="card-message-status-chart">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-medium">Message Status</CardTitle>
       </CardHeader>
