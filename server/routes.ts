@@ -941,7 +941,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: user.name,
               email: user.email,
               apiKey: displayKey,
-              status: apiKeys.length > 0 && apiKeys[0].isActive ? 'active' : 'inactive',
+              status: user.isActive === false
+                ? 'disabled'
+                : (apiKeys.length > 0 && apiKeys[0].isActive ? 'active' : 'inactive'),
               messagesSent: messageLogs.length,
               credits: profile?.credits || "0.00",
               rateLimitPerMinute: profile?.rateLimitPerMinute || 200,
@@ -958,6 +960,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin clients fetch error:", error);
       res.status(500).json({ error: "Failed to fetch clients" });
+    }
+  });
+
+  // Disable user (soft)
+  app.post("/api/admin/users/:userId/disable", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params as { userId: string };
+      const user = await storage.updateUser(userId, { isActive: false });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      // Revoke all API keys as part of disable
+      const keys = await storage.getApiKeysByUserId(userId);
+      await Promise.all(keys.map(k => storage.revokeApiKey(k.id)));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Disable user error:", error);
+      res.status(500).json({ error: "Failed to disable user" });
+    }
+  });
+
+  // Enable user
+  app.post("/api/admin/users/:userId/enable", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params as { userId: string };
+      const user = await storage.updateUser(userId, { isActive: true });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Enable user error:", error);
+      res.status(500).json({ error: "Failed to enable user" });
+    }
+  });
+
+  // Revoke all API keys for a user
+  app.post("/api/admin/users/:userId/revoke-keys", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params as { userId: string };
+      const keys = await storage.getApiKeysByUserId(userId);
+      await Promise.all(keys.map(k => storage.revokeApiKey(k.id)));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Revoke user keys error:", error);
+      res.status(500).json({ error: "Failed to revoke API keys" });
+    }
+  });
+
+  // Soft delete user: disable, revoke keys, clear profile and contacts
+  app.post("/api/admin/users/:userId/delete", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params as { userId: string };
+      const user = await storage.updateUser(userId, { isActive: false });
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const keys = await storage.getApiKeysByUserId(userId);
+      await Promise.all(keys.map(k => storage.revokeApiKey(k.id)));
+
+      const profile = await storage.getClientProfileByUserId(userId);
+      if (profile) {
+        await storage.updateClientCredits(userId, "0.00");
+        await storage.updateClientPhoneNumbers(userId, []);
+        await storage.updateClientBusinessName(userId, null);
+      }
+
+      const groups = await storage.getContactGroupsByUserId(userId);
+      await Promise.all(groups.map(g => storage.deleteContactGroup(g.id)));
+
+      const contacts = await storage.getContactsByUserId(userId);
+      await Promise.all(contacts.map(c => storage.deleteContact(c.id)));
+
+      await storage.deleteClientContactsByUserId(userId);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ error: "Failed to delete user" });
     }
   });
 
@@ -1386,6 +1462,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+// --- Admin: Revoke API Key for a user ---
+app.post("/api/v2/account/revoke-api-key", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { keyId, userId } = req.body as { keyId?: string; userId?: string };
+    if (!keyId && !userId) return res.status(400).json({ error: "keyId or userId required" });
+
+    if (keyId) {
+      await storage.revokeApiKey(keyId);
+    } else if (userId) {
+      const keys = await storage.getApiKeysByUserId(userId);
+      await Promise.all(keys.map(k => storage.revokeApiKey(k.id)));
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin revoke API key error:", error);
+    res.status(500).json({ error: "Failed to revoke API key" });
+  }
+});
+
+// --- Admin: Disable a user account ---
+app.post("/api/v2/account/disable", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    await storage.disableUser(userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin disable user error:", error);
+    res.status(500).json({ error: "Failed to disable user" });
+  }
+});
+
+// --- Admin: Delete a user account ---
+app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    await storage.deleteUser(userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin delete user error:", error);
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+  
   // ============================================
   // API Proxy Routes (ExtremeSMS passthrough)
   // ============================================

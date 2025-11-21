@@ -193,6 +193,58 @@ export default function AdminDashboard() {
     }
   });
 
+  const disableUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest(`/api/admin/users/${userId}/disable`, { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/clients'] });
+      toast({ title: t('common.success'), description: 'User disabled and keys revoked' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to disable user', variant: 'destructive' });
+    }
+  });
+
+  const enableUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest(`/api/admin/users/${userId}/enable`, { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/clients'] });
+      toast({ title: t('common.success'), description: 'User enabled' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to enable user', variant: 'destructive' });
+    }
+  });
+
+  const revokeUserKeysMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest(`/api/admin/users/${userId}/revoke-keys`, { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/clients'] });
+      toast({ title: t('common.success'), description: 'All API keys revoked' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to revoke keys', variant: 'destructive' });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest(`/api/admin/users/${userId}/delete`, { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/clients'] });
+      toast({ title: t('common.success'), description: 'User data cleared' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to delete user', variant: 'destructive' });
+    }
+  });
+
   const { data: statsData } = useQuery<{ success: boolean; totalMessages: number; totalClients: number }>({
     queryKey: ['/api/admin/stats']
   });
@@ -458,11 +510,52 @@ export default function AdminDashboard() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{client.lastActive}</TableCell>
                       <TableCell>
-                        <AddCreditsToClientDialog 
-                          clientId={client.id}
-                          clientName={client.name}
-                          currentCredits={client.credits}
-                        />
+                        <div className="flex items-center gap-2">
+                          <AddCreditsToClientDialog 
+                            clientId={client.id}
+                            clientName={client.name}
+                            currentCredits={client.credits}
+                          />
+                          {client.status === 'disabled' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => enableUserMutation.mutate(client.id)}
+                              data-testid={`button-enable-${client.id}`}
+                            >
+                              Enable
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => disableUserMutation.mutate(client.id)}
+                              data-testid={`button-disable-${client.id}`}
+                            >
+                              Disable
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => revokeUserKeysMutation.mutate(client.id)}
+                            data-testid={`button-revoke-keys-${client.id}`}
+                          >
+                            Revoke Keys
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              if (confirm(`Delete user ${client.name}? This will disable the account, revoke keys, and clear contacts.`)) {
+                                deleteUserMutation.mutate(client.id);
+                              }
+                            }}
+                            data-testid={`button-delete-${client.id}`}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
