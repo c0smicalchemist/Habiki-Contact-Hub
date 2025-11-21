@@ -230,27 +230,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup
   app.post("/api/auth/signup", async (req, res) => {
     try {
+      console.log('🔐 Signup attempt started');
       const { email, password, confirmPassword } = req.body;
 
       if (!email || !password) {
+        console.log('❌ Signup failed: Missing email or password');
         return res.status(400).json({ error: "Email and password are required" });
       }
 
       if (!confirmPassword) {
+        console.log('❌ Signup failed: Missing password confirmation');
         return res.status(400).json({ error: "Password confirmation is required" });
       }
 
       if (password !== confirmPassword) {
+        console.log('❌ Signup failed: Passwords do not match');
         return res.status(400).json({ error: "Passwords do not match" });
       }
 
+      console.log('🔍 Checking if user exists:', email);
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
+        console.log('❌ Signup failed: Email already registered');
         return res.status(400).json({ error: "Email already registered" });
       }
 
       // Generate name from email (username part)
       const name = email.split('@')[0];
+      console.log('👤 Creating user:', { email, name });
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await storage.createUser({
@@ -261,16 +268,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "client",
         isActive: true
       });
+      console.log('✅ User created successfully:', user.id);
 
       // Create client profile with initial credits
+      console.log('💰 Creating client profile');
       await storage.createClientProfile({
         userId: user.id,
         credits: "0.00",
         currency: "USD",
         customMarkup: null
       });
+      console.log('✅ Client profile created');
 
       // Generate API key
+      console.log('🔑 Generating API key');
       const rawApiKey = `ibk_live_${crypto.randomBytes(24).toString("hex")}`;
       const keyHash = crypto.createHash("sha256").update(rawApiKey).digest("hex");
       const keyPrefix = rawApiKey.slice(0, 12);
@@ -283,17 +294,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keySuffix,
         isActive: true
       });
+      console.log('✅ API key created');
 
       // Seed example data for new users
+      console.log('🌱 Seeding example data');
       try {
         await storage.seedExampleData(user.id);
+        console.log('✅ Example data seeded');
       } catch (error) {
-        console.error("Failed to seed example data:", error);
+        console.error("⚠️ Failed to seed example data:", error);
         // Don't fail signup if example data seeding fails
       }
 
+      console.log('🎫 Generating JWT token');
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
+      console.log('✅ Signup completed successfully for:', email);
       res.json({
         success: true,
         user: {
@@ -306,7 +322,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         apiKey: rawApiKey // Only shown once
       });
     } catch (error: any) {
-      console.error("Signup error:", error);
+      console.error("❌ Signup error details:", {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        detail: error.detail
+      });
       res.status(500).json({ error: "Signup failed" });
     }
   });
@@ -314,24 +335,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login
   app.post("/api/auth/login", async (req, res) => {
     try {
+      console.log('🔐 Login attempt started');
       const { email, password } = req.body;
 
       if (!email || !password) {
+        console.log('❌ Login failed: Missing email or password');
         return res.status(400).json({ error: "Email and password are required" });
       }
 
+      console.log('🔍 Looking up user:', email);
       const user = await storage.getUserByEmail(email);
       if (!user || !user.isActive) {
+        console.log('❌ Login failed: User not found or inactive');
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      console.log('🔒 Verifying password');
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) {
+        console.log('❌ Login failed: Invalid password');
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      console.log('🎫 Generating JWT token');
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
+      console.log('✅ Login successful for:', email);
       res.json({
         success: true,
         user: {
@@ -342,8 +371,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         token
       });
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (error: any) {
+      console.error("❌ Login error details:", {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        detail: error.detail
+      });
       res.status(500).json({ error: "Login failed" });
     }
   });
