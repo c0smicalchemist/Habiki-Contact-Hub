@@ -23,7 +23,10 @@ RUN npm ci --omit=dev
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PORT=5000
 COPY --from=deps_prod /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 EXPOSE 5000
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \
+  CMD ["node","-e","http=require('http');port=process.env.PORT||'5000';http.get('http://127.0.0.1:'+port+'/api/health',res=>{process.exit(res.statusCode===200?0:1)}).on('error',()=>process.exit(1))"]
 CMD ["node", "dist/index.js"]
