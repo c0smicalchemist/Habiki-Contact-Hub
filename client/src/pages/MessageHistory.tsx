@@ -39,6 +39,9 @@ export default function MessageHistory() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(() => {
     return localStorage.getItem('selectedClientId');
   });
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    return localStorage.getItem('isAdminMode') === 'true';
+  });
   const messagesPerPage = 10;
 
   // Store selected client in localStorage
@@ -50,6 +53,11 @@ export default function MessageHistory() {
     }
   }, [selectedClientId]);
 
+  // Store admin mode in localStorage
+  useEffect(() => {
+    localStorage.setItem('isAdminMode', isAdminMode.toString());
+  }, [isAdminMode]);
+
   // Fetch current user profile
   const { data: profile } = useQuery<{
     user: { id: string; email: string; name: string; company: string | null; role: string };
@@ -58,7 +66,7 @@ export default function MessageHistory() {
   });
 
   const isAdmin = profile?.user?.role === 'admin';
-  const effectiveUserId = isAdmin && selectedClientId ? selectedClientId : undefined;
+  const effectiveUserId = isAdmin && !isAdminMode && selectedClientId ? selectedClientId : undefined;
 
   // Fetch message logs
   const { data: messagesData, isLoading } = useQuery<{ 
@@ -239,6 +247,8 @@ export default function MessageHistory() {
               <ClientSelector 
                 selectedClientId={selectedClientId}
                 onClientChange={setSelectedClientId}
+                isAdminMode={isAdminMode}
+                onAdminModeChange={setIsAdminMode}
               />
             </CardContent>
           </Card>

@@ -64,6 +64,9 @@ export default function Contacts() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(() => {
     return localStorage.getItem('selectedClientId');
   });
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    return localStorage.getItem('isAdminMode') === 'true';
+  });
 
   // Store selected client in localStorage
   useEffect(() => {
@@ -74,6 +77,11 @@ export default function Contacts() {
     }
   }, [selectedClientId]);
 
+  // Store admin mode in localStorage
+  useEffect(() => {
+    localStorage.setItem('isAdminMode', isAdminMode.toString());
+  }, [isAdminMode]);
+
   // Fetch current user profile
   const { data: profile } = useQuery<{
     user: { id: string; email: string; name: string; company: string | null; role: string };
@@ -82,7 +90,7 @@ export default function Contacts() {
   });
 
   const isAdmin = profile?.user?.role === 'admin';
-  const effectiveUserId = isAdmin && selectedClientId ? selectedClientId : undefined;
+  const effectiveUserId = isAdmin && !isAdminMode && selectedClientId ? selectedClientId : undefined;
 
   // Fetch contact groups
   const { data: groupsData } = useQuery({
@@ -304,6 +312,8 @@ export default function Contacts() {
               <ClientSelector 
                 selectedClientId={selectedClientId}
                 onClientChange={setSelectedClientId}
+                isAdminMode={isAdminMode}
+                onAdminModeChange={setIsAdminMode}
               />
             </CardContent>
           </Card>

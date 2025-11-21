@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useEffect, useState } from "react";
 
 interface Client {
@@ -13,9 +14,11 @@ interface Client {
 interface ClientSelectorProps {
   onClientChange: (clientId: string | null) => void;
   selectedClientId: string | null;
+  onAdminModeChange?: (isAdminMode: boolean) => void;
+  isAdminMode?: boolean;
 }
 
-export function ClientSelector({ onClientChange, selectedClientId }: ClientSelectorProps) {
+export function ClientSelector({ onClientChange, selectedClientId, onAdminModeChange, isAdminMode = false }: ClientSelectorProps) {
   const { data: clientsData, isLoading } = useQuery<{ 
     success: boolean; 
     clients: Client[];
@@ -25,12 +28,19 @@ export function ClientSelector({ onClientChange, selectedClientId }: ClientSelec
 
   const clients = clientsData?.clients || [];
 
-  // Auto-select first client if none selected
+  // Auto-select first client if none selected and not in admin mode
   useEffect(() => {
-    if (!selectedClientId && clients.length > 0) {
+    if (!isAdminMode && !selectedClientId && clients.length > 0) {
       onClientChange(clients[0].id);
     }
-  }, [clients, selectedClientId, onClientChange]);
+  }, [clients, selectedClientId, onClientChange, isAdminMode]);
+
+  // Clear selected client when switching to admin mode
+  useEffect(() => {
+    if (isAdminMode && selectedClientId) {
+      onClientChange(null);
+    }
+  }, [isAdminMode, selectedClientId, onClientChange]);
 
   if (isLoading) {
     return (
@@ -53,48 +63,74 @@ export function ClientSelector({ onClientChange, selectedClientId }: ClientSelec
   const selectedClient = clients.find(c => c.id === selectedClientId);
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="client-selector">Acting as Client</Label>
-      <Select 
-        value={selectedClientId || undefined} 
-        onValueChange={onClientChange}
-      >
-        <SelectTrigger id="client-selector" data-testid="select-client">
-          <SelectValue placeholder="Select a client">
-            {selectedClient && (
-              <span className="flex items-center justify-between w-full">
-                <span>{selectedClient.name}</span>
-                <span className="text-xs text-muted-foreground ml-2">
-                  ${parseFloat(selectedClient.credits).toFixed(2)} credits
-                </span>
-              </span>
-            )}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {clients.map((client) => (
-            <SelectItem 
-              key={client.id} 
-              value={client.id}
-              data-testid={`option-client-${client.id}`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex flex-col">
-                  <span className="font-medium">{client.name}</span>
-                  <span className="text-xs text-muted-foreground">{client.email}</span>
-                </div>
-                <span className="text-xs text-muted-foreground ml-4">
-                  ${parseFloat(client.credits).toFixed(2)}
-                </span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {selectedClient && (
-        <p className="text-xs text-muted-foreground">
-          All actions will be performed as <span className="font-medium">{selectedClient.name}</span>
-        </p>
+    <div className="space-y-4">
+      {onAdminModeChange && (
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="admin-mode"
+            checked={isAdminMode}
+            onCheckedChange={onAdminModeChange}
+            data-testid="admin-mode-toggle"
+          />
+          <Label htmlFor="admin-mode">Admin Direct Mode</Label>
+        </div>
+      )}
+      
+      {isAdminMode ? (
+        <div className="space-y-2">
+          <Label>Operating Mode</Label>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm font-medium text-blue-900">Admin Direct Mode</p>
+            <p className="text-xs text-blue-700">
+              All actions will be performed directly as admin using your own credits
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="client-selector">Acting as Client</Label>
+          <Select 
+            value={selectedClientId || undefined} 
+            onValueChange={onClientChange}
+          >
+            <SelectTrigger id="client-selector" data-testid="select-client">
+              <SelectValue placeholder="Select a client">
+                {selectedClient && (
+                  <span className="flex items-center justify-between w-full">
+                    <span>{selectedClient.name}</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ${parseFloat(selectedClient.credits).toFixed(2)} credits
+                    </span>
+                  </span>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem 
+                  key={client.id} 
+                  value={client.id}
+                  data-testid={`option-client-${client.id}`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{client.name}</span>
+                      <span className="text-xs text-muted-foreground">{client.email}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground ml-4">
+                      ${parseFloat(client.credits).toFixed(2)}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedClient && (
+            <p className="text-xs text-muted-foreground">
+              All actions will be performed as <span className="font-medium">{selectedClient.name}</span>
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

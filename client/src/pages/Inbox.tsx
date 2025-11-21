@@ -32,6 +32,9 @@ export default function Inbox() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(() => {
     return localStorage.getItem('selectedClientId');
   });
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    return localStorage.getItem('isAdminMode') === 'true';
+  });
 
   // Store selected client in localStorage
   useEffect(() => {
@@ -42,6 +45,11 @@ export default function Inbox() {
     }
   }, [selectedClientId]);
 
+  // Store admin mode in localStorage
+  useEffect(() => {
+    localStorage.setItem('isAdminMode', isAdminMode.toString());
+  }, [isAdminMode]);
+
   // Fetch current user profile
   const { data: profile } = useQuery<{
     user: { id: string; email: string; name: string; company: string | null; role: string };
@@ -50,7 +58,7 @@ export default function Inbox() {
   });
 
   const isAdmin = profile?.user?.role === 'admin';
-  const effectiveUserId = isAdmin && selectedClientId ? selectedClientId : undefined;
+  const effectiveUserId = isAdmin && !isAdminMode && selectedClientId ? selectedClientId : undefined;
 
   // Fetch inbox messages
   const { data: inboxData, isLoading } = useQuery({
@@ -104,6 +112,8 @@ export default function Inbox() {
               <ClientSelector 
                 selectedClientId={selectedClientId}
                 onClientChange={setSelectedClientId}
+                isAdminMode={isAdminMode}
+                onAdminModeChange={setIsAdminMode}
               />
             </CardContent>
           </Card>

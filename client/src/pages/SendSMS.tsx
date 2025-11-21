@@ -36,6 +36,9 @@ export default function SendSMS() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(() => {
     return localStorage.getItem('selectedClientId');
   });
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    return localStorage.getItem('isAdminMode') === 'true';
+  });
 
   // Store selected client in localStorage
   useEffect(() => {
@@ -45,6 +48,11 @@ export default function SendSMS() {
       localStorage.removeItem('selectedClientId');
     }
   }, [selectedClientId]);
+
+  // Store admin mode in localStorage
+  useEffect(() => {
+    localStorage.setItem('isAdminMode', isAdminMode.toString());
+  }, [isAdminMode]);
 
   // Single SMS state
   const [singleTo, setSingleTo] = useState("");
@@ -68,7 +76,7 @@ export default function SendSMS() {
   });
 
   const isAdmin = profile?.user?.role === 'admin';
-  const effectiveUserId = isAdmin && selectedClientId ? selectedClientId : undefined;
+  const effectiveUserId = isAdmin && !isAdminMode && selectedClientId ? selectedClientId : undefined;
 
   // Fetch contacts and groups
   const { data: contactsData } = useQuery({
@@ -250,6 +258,8 @@ export default function SendSMS() {
               <ClientSelector 
                 selectedClientId={selectedClientId}
                 onClientChange={setSelectedClientId}
+                isAdminMode={isAdminMode}
+                onAdminModeChange={setIsAdminMode}
               />
             </CardContent>
           </Card>
