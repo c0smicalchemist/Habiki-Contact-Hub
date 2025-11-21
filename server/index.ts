@@ -259,18 +259,8 @@ app.use((req, res, next) => {
   console.log('Railway vars count:', railwayVars.length);
   
   // FORCE production mode on Railway regardless of NODE_ENV
-  const shouldUseVite = !isRailway && process.env.NODE_ENV === "development";
-  
-  console.log('🔧 Decision: shouldUseVite =', shouldUseVite);
-  
-  if (shouldUseVite) {
-    console.log('🔧 Setting up Vite dev server...');
-    const { setupVite } = await import('./vite');
-    await setupVite(app, server);
-  } else {
-    console.log('🔧 Setting up static file serving (Railway or production)...');
-    serveStatic(app);
-  }
+  console.log('🔧 Setting up static file serving (Railway or production)...');
+  serveStatic(app);
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
