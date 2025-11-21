@@ -32,6 +32,7 @@ export default function AdminDashboard() {
   const [webhookFrom, setWebhookFrom] = useState('');
   const [webhookReceiver, setWebhookReceiver] = useState('');
   const [webhookMessage, setWebhookMessage] = useState('');
+  const [webhookMessageId, setWebhookMessageId] = useState('');
   const [flowReceiver, setFlowReceiver] = useState('');
 
   const usTimezones = [
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
     mutationFn: async () => {
       return await apiRequest('/api/admin/webhook/test', {
         method: 'POST',
-        body: JSON.stringify({ from: webhookFrom, receiver: webhookReceiver, message: webhookMessage })
+        body: JSON.stringify({ from: webhookFrom, receiver: webhookReceiver, message: webhookMessage, messageId: webhookMessageId || undefined })
       });
     },
     onSuccess: () => {
@@ -842,7 +843,7 @@ export default function AdminDashboard() {
               <CardDescription>Simulate inbound webhook and verify routing to Ibiki inbox</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <Label>From (sender phone)</Label>
                   <Input value={webhookFrom} onChange={(e) => setWebhookFrom(e.target.value)} placeholder="+1-555-0000" />
@@ -854,6 +855,10 @@ export default function AdminDashboard() {
                 <div>
                   <Label>Message</Label>
                   <Input value={webhookMessage} onChange={(e) => setWebhookMessage(e.target.value)} placeholder="Hello from test" />
+                </div>
+                <div>
+                  <Label>Message ID (optional)</Label>
+                  <Input value={webhookMessageId} onChange={(e) => setWebhookMessageId(e.target.value)} placeholder="Provide custom messageId" />
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-4">
@@ -867,6 +872,7 @@ export default function AdminDashboard() {
                 <div className="p-3 border rounded">
                   <h4 className="font-semibold mb-2">Last Webhook Event</h4>
                   <p className="text-xs text-muted-foreground">At: {webhookStatusQuery.data?.lastEventAt || '—'}</p>
+                  <p className="text-xs">Message ID: {webhookStatusQuery.data?.lastEvent?.messageId || '—'}</p>
                   <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">{JSON.stringify(webhookStatusQuery.data?.lastEvent || null, null, 2)}</pre>
                   <p className="text-xs mt-2">Routed User: {webhookStatusQuery.data?.lastRoutedUser || '—'}</p>
                 </div>
