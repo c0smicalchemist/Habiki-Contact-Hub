@@ -70,13 +70,41 @@ export function MessageStatusChart({ userId }: MessageStatusChartProps) {
                   <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#00000033" />
                   </filter>
+                  <linearGradient id="track" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#e5e7eb" />
+                    <stop offset="100%" stopColor="#cbd5e1" />
+                  </linearGradient>
+                  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
                 </defs>
+              {/* Animated track behind the ring */}
+              <Pie
+                data={[{ name: 'track', value: 100 }]}
+                cx="50%"
+                cy="50%"
+                innerRadius={58}
+                outerRadius={88}
+                startAngle={0}
+                endAngle={360}
+                dataKey="value"
+                isAnimationActive
+                animationBegin={0}
+                animationDuration={3000}
+                animationEasing="linear"
+              >
+                <Cell fill="url(#track)" opacity={0.35} />
+              </Pie>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={75}
+                innerRadius={60}
+                outerRadius={85}
                 paddingAngle={2}
                 dataKey="value"
                 labelLine={{ stroke: '#94a3b8', strokeWidth: 1.5 }}
@@ -102,7 +130,7 @@ export function MessageStatusChart({ userId }: MessageStatusChartProps) {
                 }}
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} filter="url(#shadow)" fill={
+                  <Cell key={`cell-${index}`} filter="url(#glow)" fill={
                     entry.color === '#10b981' ? 'url(#grad-green)' :
                     entry.color === '#3b82f6' ? 'url(#grad-blue)' :
                     entry.color === '#ef4444' ? 'url(#grad-red)' : entry.color

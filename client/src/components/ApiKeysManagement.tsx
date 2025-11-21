@@ -139,10 +139,33 @@ export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagem
                       className="flex items-center justify-between p-2 rounded border border-border text-xs"
                       data-testid={`api-key-${key.id}`}
                     >
-                      <code className="font-mono">{key.displayKey}</code>
-                      <Badge variant={key.isActive ? "default" : "secondary"} className="text-xs">
-                        {key.isActive ? t('common.active') : t('common.inactive')}
-                      </Badge>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <code className="font-mono truncate">{key.displayKey}</code>
+                        <Badge variant={key.isActive ? "default" : "secondary"} className="text-xs">
+                          {key.isActive ? t('common.active') : t('common.inactive')}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2">
+                        {key.isActive ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setRevokeKeyId(key.id)}
+                            data-testid={`button-revoke-${key.id}`}
+                          >
+                            Revoke
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteKeyMutation.mutate(key.id)}
+                            data-testid={`button-delete-${key.id}`}
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
