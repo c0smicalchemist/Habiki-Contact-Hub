@@ -131,10 +131,43 @@ if (process.env.DATABASE_URL) {
 }
 
 import express, { type Request, Response, NextFunction } from "express";
+import fs from "fs";
+import path from "path";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+
+function serveStatic(app: express.Express) {
+  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+  console.log("🔧 Static file serving setup:");
+  console.log("Looking for build files in:", distPath);
+  console.log("Directory exists:", fs.existsSync(distPath));
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    console.log("Files found:", files.slice(0, 10));
+  }
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+    );
+  }
+  app.use(express.static(distPath));
+  app.use("*", (_req, res) => {
+    const indexPath = path.resolve(distPath, "index.html");
+    console.log("🔧 Serving index.html from:", indexPath);
+    res.sendFile(indexPath);
+  });
+}
 
 declare module 'http' {
   interface IncomingMessage {
@@ -232,6 +265,7 @@ app.use((req, res, next) => {
   
   if (shouldUseVite) {
     console.log('🔧 Setting up Vite dev server...');
+    const { setupVite } = await import('./vite');
     await setupVite(app, server);
   } else {
     console.log('🔧 Setting up static file serving (Railway or production)...');
