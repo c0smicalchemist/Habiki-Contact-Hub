@@ -222,12 +222,19 @@ app.use((req, res, next) => {
   console.log('🔧 Environment check for Vite/Static serving:');
   console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
   console.log('app.get("env"):', app.get("env"));
+  console.log('isRailway:', isRailway);
+  console.log('Railway vars count:', railwayVars.length);
   
-  if (process.env.NODE_ENV === "development") {
+  // FORCE production mode on Railway regardless of NODE_ENV
+  const shouldUseVite = !isRailway && process.env.NODE_ENV === "development";
+  
+  console.log('🔧 Decision: shouldUseVite =', shouldUseVite);
+  
+  if (shouldUseVite) {
     console.log('🔧 Setting up Vite dev server...');
     await setupVite(app, server);
   } else {
-    console.log('🔧 Setting up static file serving...');
+    console.log('🔧 Setting up static file serving (Railway or production)...');
     serveStatic(app);
   }
 

@@ -68,7 +68,17 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  // Build outputs to dist/public (see vite.config.ts)
+  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+
+  console.log('🔧 Static file serving setup:');
+  console.log('Looking for build files in:', distPath);
+  console.log('Directory exists:', fs.existsSync(distPath));
+  
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    console.log('Files found:', files.slice(0, 10)); // Show first 10 files
+  }
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -80,6 +90,8 @@ export function serveStatic(app: Express) {
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    const indexPath = path.resolve(distPath, "index.html");
+    console.log('🔧 Serving index.html from:', indexPath);
+    res.sendFile(indexPath);
   });
 }
