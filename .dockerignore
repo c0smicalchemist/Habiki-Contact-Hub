@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.github
+logs
+.env*
+Dockerfile
+production-deploy.sh
+deploy.sh
+README.md
+*.md
