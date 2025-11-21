@@ -376,7 +376,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/send-sms">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
               </CardHeader>
             </Link>
           </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/inbox">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export default function AdminDashboard() {
               </CardHeader>
             </Link>
           </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/contacts">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -415,7 +415,7 @@ export default function AdminDashboard() {
               </CardHeader>
             </Link>
           </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/message-history">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -446,7 +446,7 @@ export default function AdminDashboard() {
           </TabsList>
 
         <TabsContent value="clients" className="space-y-4">
-          <Card>
+          <Card className="border border-border/60">
             <CardHeader>
               <CardTitle>Client Management</CardTitle>
               <CardDescription>View and manage all connected clients</CardDescription>
@@ -604,7 +604,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="configuration" className="space-y-4">
-          <Card>
+          <Card className="border border-border/60">
             <CardHeader>
               <CardTitle>ExtremeSMS Configuration</CardTitle>
               <CardDescription>
@@ -719,7 +719,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="webhook" className="space-y-4">
-          <Card>
+          <Card className="border border-border/60">
             <CardHeader>
               <CardTitle>Webhook Configuration (2-Way SMS)</CardTitle>
               <CardDescription>
@@ -837,7 +837,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border border-border/60">
             <CardHeader>
               <CardTitle>Webhook Diagnostics</CardTitle>
               <CardDescription>Simulate inbound webhook and verify routing to Ibiki inbox</CardDescription>

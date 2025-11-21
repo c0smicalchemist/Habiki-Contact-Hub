@@ -112,7 +112,7 @@ export default function ClientDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/send-sms">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function ClientDashboard() {
               </CardHeader>
             </Link>
           </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/inbox">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export default function ClientDashboard() {
               </CardHeader>
             </Link>
           </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/contacts">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function ClientDashboard() {
               </CardHeader>
             </Link>
           </Card>
-          <Card className="hover-elevate active-elevate-2 cursor-pointer">
+          <Card className="hover-elevate active-elevate-2 cursor-pointer border-2 border-blue-500/30">
             <Link href="/message-history">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
