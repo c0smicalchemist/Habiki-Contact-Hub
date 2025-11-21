@@ -2272,8 +2272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? userId 
         : req.user.userId;
 
+      const { extremeUsername, extremePassword } = await getExtremeSMSCredentials();
       
-      const response = await axios.post('${EXTREMESMS_BASE_URL}/api/v2/sms/sendbulk', {
+      const response = await axios.post(`${EXTREMESMS_BASE_URL}/api/v2/sms/sendbulk`, {
         username: extremeUsername,
         password: extremePassword,
         recipients,
@@ -2325,7 +2326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { extremeUsername, extremePassword } = await getExtremeSMSCredentials();
       
-      const response = await axios.post('${EXTREMESMS_BASE_URL}/api/v2/sms/sendbulkmulti', {
+      const response = await axios.post(`${EXTREMESMS_BASE_URL}/api/v2/sms/sendbulkmulti`, {
         username: extremeUsername,
         password: extremePassword,
         messages
