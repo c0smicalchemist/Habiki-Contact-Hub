@@ -176,7 +176,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  // Add a simple test route before registerRoutes
+  app.get("/api/test", (req, res) => {
+    res.json({ message: "Server is running", timestamp: new Date().toISOString() });
+  });
+  
+  console.log('🔧 Registering routes...');
+  let server;
+  try {
+    server = await registerRoutes(app);
+    console.log('✅ Routes registered successfully');
+  } catch (error) {
+    console.error('❌ Failed to register routes:', error);
+    throw error;
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -184,6 +197,20 @@ app.use((req, res, next) => {
 
     res.status(status).json({ message });
     throw err;
+  });
+
+  // Add debug route to see what routes are registered
+  app.get("/api/debug/routes", (req, res) => {
+    const routes = [];
+    app._router.stack.forEach((middleware) => {
+      if (middleware.route) {
+        routes.push({
+          path: middleware.route.path,
+          methods: Object.keys(middleware.route.methods)
+        });
+      }
+    });
+    res.json({ routes, environment: process.env.NODE_ENV });
   });
 
   // importantly only setup vite in development and after
