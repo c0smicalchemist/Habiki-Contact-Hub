@@ -179,29 +179,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json());
 
   // ============================================
-  // Health Check Route
+  // Health Check Routes
   // ============================================
-  app.get("/api/health", async (req, res) => {
+  
+  // Basic health check - no database required
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      uptime: process.uptime(),
+      version: "1.0.0"
+    });
+  });
+
+  // Detailed health check with database
+  app.get("/api/health/detailed", async (req, res) => {
+    const healthStatus = {
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      database: "unknown",
+      userCount: 0,
+      uptime: process.uptime()
+    };
+
     try {
       // Test database connection by trying to get user count
       const users = await storage.getAllUsers();
-      console.log('✅ Using PostgreSQL database storage');
-      console.log(`✅ Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('?')[0] || 'connected'}`);
+      healthStatus.database = "connected";
+      healthStatus.userCount = users.length;
+      console.log('✅ Detailed health check: Database connected, user count:', users.length);
       
-      res.json({
-        status: "healthy",
-        timestamp: new Date().toISOString(),
-        database: "connected",
-        userCount: users.length,
-        environment: process.env.NODE_ENV || "development"
-      });
+      res.json(healthStatus);
     } catch (error) {
-      console.error("Health check failed:", error);
-      res.status(500).json({
-        status: "unhealthy",
-        timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
+      console.error("Detailed health check database error:", error);
+      
+      // Still return 200 OK for basic health check - app is running even if DB has issues
+      healthStatus.status = "degraded";
+      healthStatus.database = "error";
+      
+      res.json(healthStatus);
     }
   });
 

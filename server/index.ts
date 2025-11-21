@@ -118,11 +118,30 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  
+  console.log('🚀 Starting server...');
+  console.log(`🌐 Port: ${port}`);
+  console.log(`🏠 Host: 0.0.0.0`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
+    console.log('✅ Server started successfully!');
+    console.log(`✅ Listening on http://0.0.0.0:${port}`);
+    console.log('✅ Health check available at /api/health');
     log(`serving on port ${port}`);
   });
-})();
+
+  // Handle server startup errors
+  server.on('error', (error) => {
+    console.error('❌ Server startup error:', error);
+    process.exit(1);
+  });
+
+})().catch((error) => {
+  console.error('❌ Application startup failed:', error);
+  process.exit(1);
+});
