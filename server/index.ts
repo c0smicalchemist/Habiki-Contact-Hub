@@ -1,12 +1,23 @@
 import dotenv from "dotenv";
-dotenv.config();
 
-// CRITICAL: Verify DATABASE_URL is set in production
-if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+// Load environment-specific config
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+dotenv.config({ path: envFile });
+dotenv.config(); // Also load .env as fallback
+
+// CRITICAL: Verify DATABASE_URL is set
+if (!process.env.DATABASE_URL) {
   console.error('❌ FATAL ERROR: DATABASE_URL environment variable is not set!');
-  console.error('❌ The application REQUIRES a PostgreSQL database in production.');
-  console.error('❌ Please set DATABASE_URL in your .env file or environment variables.');
+  console.error('❌ The application REQUIRES a PostgreSQL database.');
+  console.error('❌ Please set DATABASE_URL in your environment variables or .env file.');
   console.error('❌ Example: DATABASE_URL=postgresql://user:password@host:port/database');
+  
+  // In Railway, DATABASE_URL is provided by the PostgreSQL addon
+  if (process.env.RAILWAY_ENVIRONMENT) {
+    console.error('❌ Railway detected: Make sure you have added a PostgreSQL database addon');
+    console.error('❌ Go to your Railway project → Add Service → Database → PostgreSQL');
+  }
+  
   process.exit(1);
 }
 
