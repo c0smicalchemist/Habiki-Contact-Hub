@@ -7,6 +7,7 @@ import { LogOut, RefreshCcw } from "lucide-react";
 import logoUrl from "@assets/Yubin_Dash_NOBG_1763476645991.png";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export function DashboardHeader() {
   const [, setLocation] = useLocation();
