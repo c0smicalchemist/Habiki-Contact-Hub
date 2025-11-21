@@ -55,6 +55,7 @@ export interface IStorage {
   createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
   updateApiKeyLastUsed(id: string): Promise<void>;
   revokeApiKey(id: string): Promise<void>;
+  deleteApiKey(id: string): Promise<void>;
   
   // Client Profile methods
   getClientProfileByUserId(userId: string): Promise<ClientProfile | undefined>;
@@ -283,6 +284,10 @@ export class MemStorage implements IStorage {
       apiKey.isActive = false;
       this.apiKeys.set(id, apiKey);
     }
+  }
+
+  async deleteApiKey(id: string): Promise<void> {
+    this.apiKeys.delete(id);
   }
 
   // Client Profile methods
@@ -959,6 +964,10 @@ export class DbStorage implements IStorage {
   }
 
   async revokeApiKey(id: string): Promise<void> {
+    await this.db.update(apiKeys).set({ isActive: false }).where(eq(apiKeys.id, id));
+  }
+
+  async deleteApiKey(id: string): Promise<void> {
     await this.db.delete(apiKeys).where(eq(apiKeys.id, id));
   }
 

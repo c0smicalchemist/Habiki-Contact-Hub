@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -29,6 +29,8 @@ export default function Login() {
     },
     onSuccess: (data) => {
       localStorage.setItem('token', data.token);
+      // Clear cached queries to guarantee current data after login
+      queryClient.clear();
       toast({
         title: "Welcome back!",
         description: `Logged in as ${data.user.email}`

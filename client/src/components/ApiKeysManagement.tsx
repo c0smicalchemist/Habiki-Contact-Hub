@@ -88,6 +88,21 @@ export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagem
     }
   });
 
+  const deleteKeyMutation = useMutation({
+    mutationFn: async (keyId: string) => {
+      return await apiRequest(`/api/client/keys/${keyId}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/client/profile'] });
+      toast({ title: 'API Key Deleted', description: 'The key has been removed from your account.' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to Delete Key', description: error.message || 'Please try again', variant: 'destructive' });
+    }
+  });
+
   if (isCompact) {
     return (
       <>
@@ -215,15 +230,27 @@ export function ApiKeysManagement({ apiKeys, isCompact = false }: ApiKeysManagem
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setRevokeKeyId(key.id)}
-                      disabled={!key.isActive}
-                      data-testid={`button-revoke-${key.id}`}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
+                    {key.isActive ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setRevokeKeyId(key.id)}
+                        data-testid={`button-revoke-${key.id}`}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                        <span className="sr-only">Revoke</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteKeyMutation.mutate(key.id)}
+                        data-testid={`button-delete-${key.id}`}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
