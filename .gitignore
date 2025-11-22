@@ -122,7 +122,6 @@ vite.config.ts.*
 *.bak
 
 # Development artifacts (production cleanup)
-attached_assets/
 design_guidelines.md
 testing/
 
