@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
-import logoUrl from "@assets/Yubin_Dash_NOBG_1763476645991.png";
+import logoUrl from "@assets/Yubin_Dash_NOBG_1763476645991.svg";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
