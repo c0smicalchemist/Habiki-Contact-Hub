@@ -273,6 +273,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/db/status", authenticateToken, requireAdmin, async (_req, res) => {
+    try {
+      const url = process.env.DATABASE_URL;
+      if (!url) return res.status(400).json({ success: false, error: "DATABASE_URL not set" });
+      const { Pool } = await import('pg');
+      const pool = new Pool({ connectionString: url, ssl: { rejectUnauthorized: false } });
+      const r = await pool.query("select table_name from information_schema.tables where table_schema='public' order by table_name");
+      await pool.end();
+      res.json({ success: true, tables: r.rows.map((x: any) => x.table_name) });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || String(e) });
+    }
+  });
+
+  app.post("/api/admin/db/migrate", authenticateToken, requireAdmin, async (_req, res) => {
+    try {
+      const url = process.env.DATABASE_URL;
+      if (!url) return res.status(400).json({ success: false, error: "DATABASE_URL not set" });
+      const { Pool } = await import('pg');
+      const { drizzle } = await import('drizzle-orm/node-postgres');
+      const { migrate } = await import('drizzle-orm/node-postgres/migrator');
+      const path = await import('path');
+      const pool = new Pool({ connectionString: url, ssl: { rejectUnauthorized: false } });
+      const db = drizzle(pool);
+      const migrationsFolder = path.resolve(import.meta.dirname, '..', 'migrations');
+      await migrate(db, { migrationsFolder });
+      await pool.end();
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || String(e) });
+    }
+  });
+
   // ============================================
   // Authentication Routes
   // ============================================
