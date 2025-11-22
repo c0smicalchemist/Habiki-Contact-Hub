@@ -1,4 +1,6 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useEffect, useState } from "react";
+import { apiRequest } from "./lib/queryClient";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -19,6 +21,37 @@ import SendSMS from "@/pages/SendSMS";
 import Inbox from "@/pages/Inbox";
 import MessageHistory from "@/pages/MessageHistory";
 
+function ProtectedAdmin() {
+  const [location, setLocation] = useLocation();
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLocation('/login');
+      setAllowed(false);
+      return;
+    }
+    (async () => {
+      try {
+        const me = await apiRequest('/api/auth/me');
+        if (me?.user?.role === 'admin') {
+          setAllowed(true);
+        } else {
+          setLocation('/login');
+          setAllowed(false);
+        }
+      } catch {
+        setLocation('/login');
+        setAllowed(false);
+      }
+    })();
+  }, [setLocation]);
+
+  if (allowed === null) return null;
+  return <AdminDashboard />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -29,7 +62,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={ClientDashboard} />
       <Route path="/docs" component={ApiDocs} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin" component={ProtectedAdmin} />
       <Route path="/contacts" component={Contacts} />
       <Route path="/send-sms" component={SendSMS} />
       <Route path="/inbox" component={Inbox} />

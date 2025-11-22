@@ -2906,3 +2906,13 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
   const httpServer = createServer(app);
   return httpServer;
 }
+  // Current authenticated user
+  app.get('/api/auth/me', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+      res.json({ success: true, user: { id: user.id, email: user.email, role: user.role } });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || 'Failed to load user' });
+    }
+  });
