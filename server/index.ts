@@ -128,6 +128,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import fs from "fs";
 import path from "path";
 import { registerRoutes } from "./routes";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -206,6 +207,26 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Bootstrap secrets from system_config if env vars are missing
+  try {
+    const desiredKeys = [
+      { env: 'JWT_SECRET', cfg: 'jwt_secret' },
+      { env: 'SESSION_SECRET', cfg: 'session_secret' },
+      { env: 'WEBHOOK_SECRET', cfg: 'webhook_secret' },
+      { env: 'RESEND_API_KEY', cfg: 'resend_api_key' },
+    ];
+    for (const k of desiredKeys) {
+      if (!process.env[k.env]) {
+        const rec = await storage.getSystemConfig(k.cfg);
+        if (rec?.value) {
+          process.env[k.env] = rec.value;
+          console.log(`🔐 Loaded ${k.env} from system_config`);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️  Unable to bootstrap secrets from system_config:', (e as any)?.message || e);
+  }
   // Add a simple test route before registerRoutes
   app.get("/api/test", (req, res) => {
     res.json({ message: "Server is running", timestamp: new Date().toISOString() });

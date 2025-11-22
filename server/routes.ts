@@ -273,6 +273,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Secrets status
+  app.get('/api/admin/secrets/status', authenticateToken, requireAdmin, async (_req, res) => {
+    try {
+      const keys = ['jwt_secret','session_secret','webhook_secret','resend_api_key'];
+      const out: Record<string, boolean> = {};
+      for (const k of keys) {
+        const rec = await storage.getSystemConfig(k);
+        out[k] = !!rec?.value;
+      }
+      res.json({ success: true, configured: out });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || String(e) });
+    }
+  });
+
+  // Set secrets (admin)
+  app.post('/api/admin/secrets/set', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const payload = req.body || {};
+      const allowed = ['jwt_secret','session_secret','webhook_secret','resend_api_key'];
+      for (const key of allowed) {
+        if (payload[key]) {
+          await storage.setSystemConfig(key, String(payload[key]));
+        }
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || String(e) });
+    }
+  });
+
+  // Rotate a specific secret
+  app.post('/api/admin/secrets/rotate', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { key } = req.body as { key: string };
+      const allowed = ['jwt_secret','session_secret','webhook_secret'];
+      if (!allowed.includes(key)) return res.status(400).json({ success: false, error: 'Invalid key' });
+      const newVal = crypto.randomBytes(48).toString('base64url');
+      await storage.setSystemConfig(key, newVal);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || String(e) });
+    }
+  });
+
   app.get("/api/admin/db/status", authenticateToken, requireAdmin, async (_req, res) => {
     try {
       const url = process.env.DATABASE_URL;

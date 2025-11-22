@@ -132,6 +132,22 @@ export default function AdminDashboard() {
     }
   });
 
+  const secretsStatusQuery = useQuery<{ success: boolean; configured: Record<string, boolean> }>({
+    queryKey: ['/api/admin/secrets/status']
+  });
+  const rotateSecretMutation = useMutation({
+    mutationFn: async (key: string) => {
+      return await apiRequest('/api/admin/secrets/rotate', { method: 'POST', body: JSON.stringify({ key }) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/secrets/status'] });
+      toast({ title: t('common.success'), description: 'Secret rotated' });
+    },
+    onError: (error: any) => {
+      toast({ title: t('common.error'), description: error.message || 'Rotation failed', variant: 'destructive' });
+    }
+  });
+
   const webhookTestMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest('/api/admin/webhook/test', {
@@ -784,6 +800,29 @@ export default function AdminDashboard() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Note: JWT/Session secrets are stored in server environment and not displayed.
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">JWT Secret</span>
+                      {secretsStatusQuery.data?.configured?.jwt_secret ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Session Secret</span>
+                      {secretsStatusQuery.data?.configured?.session_secret ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Webhook Secret</span>
+                      {secretsStatusQuery.data?.configured?.webhook_secret ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Resend API Key</span>
+                      {secretsStatusQuery.data?.configured?.resend_api_key ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button variant="outline" onClick={() => rotateSecretMutation.mutate('jwt_secret')} disabled={rotateSecretMutation.isPending}>Rotate JWT</Button>
+                    <Button variant="outline" onClick={() => rotateSecretMutation.mutate('session_secret')} disabled={rotateSecretMutation.isPending}>Rotate Session</Button>
+                    <Button variant="outline" onClick={() => rotateSecretMutation.mutate('webhook_secret')} disabled={rotateSecretMutation.isPending}>Rotate Webhook</Button>
                   </div>
                 </div>
               </div>
