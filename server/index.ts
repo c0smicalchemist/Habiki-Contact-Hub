@@ -96,8 +96,10 @@ if (!process.env.DATABASE_URL) {
   }
   
   // Production consistency: always require a real database
-  console.error('❌ Exiting: A consistent PostgreSQL database is required in production');
-  process.exit(1);
+  if (!process.env.DATABASE_URL && !process.env.DATABASE_PRIVATE_URL && !process.env.POSTGRES_URL && !process.env.POSTGRESQL_URL && !process.env.DATABASE_PUBLIC_URL) {
+    console.error('❌ Exiting: A consistent PostgreSQL database is required in production');
+    process.exit(1);
+  }
 }
 
 // CRITICAL: Validate DATABASE_URL format (if present)
@@ -115,8 +117,6 @@ if (process.env.DATABASE_URL) {
     console.log('Database name:', url.pathname.slice(1));
   } catch (error: any) {
     console.error('❌ WARNING: DATABASE_URL format is invalid!');
-    console.error('DATABASE_URL value:', process.env.DATABASE_URL);
-    console.error('Parse error:', error.message);
     console.error('❌ Exiting: Fix DATABASE_URL for consistent storage');
     process.exit(1);
   }
@@ -207,6 +207,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  const resolvedDbUrl =
+    process.env.DATABASE_URL ||
+    process.env.DATABASE_PRIVATE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRESQL_URL ||
+    process.env.DATABASE_PUBLIC_URL ||
+    "";
+  if (!process.env.DATABASE_URL && resolvedDbUrl) {
+    process.env.DATABASE_URL = resolvedDbUrl;
+  }
   // Bootstrap secrets from system_config if env vars are missing
   try {
     const desiredKeys = [
