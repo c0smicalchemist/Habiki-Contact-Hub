@@ -116,6 +116,21 @@ export default function AdminDashboard() {
   const webhookStatusQuery = useQuery<{ success: boolean; lastEvent: any; lastEventAt: string | null; lastRoutedUser: string | null }>({
     queryKey: ['/api/admin/webhook/status']
   });
+  const dbStatusQuery = useQuery<{ success: boolean; tables: string[] }>({
+    queryKey: ['/api/admin/db/status']
+  });
+  const runMigrationsMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/admin/db/migrate', { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/db/status'] });
+      toast({ title: t('common.success'), description: 'Migrations applied' });
+    },
+    onError: (error: any) => {
+      toast({ title: t('common.error'), description: error.message || 'Migration failed', variant: 'destructive' });
+    }
+  });
 
   const webhookTestMutation = useMutation({
     mutationFn: async () => {
@@ -714,6 +729,64 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </form>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-border/60">
+            <CardHeader>
+              <CardTitle>Environment & Database</CardTitle>
+              <CardDescription>Overview of critical configuration and database state</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Database Connection</span>
+                    {dbStatusQuery.isLoading ? (
+                      <Badge variant="secondary">Checking…</Badge>
+                    ) : dbStatusQuery.data?.success ? (
+                      <Badge>Connected</Badge>
+                    ) : (
+                      <Badge variant="destructive">Error</Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Tables: {dbStatusQuery.data?.tables ? dbStatusQuery.data.tables.length : 0}
+                  </div>
+                  {dbStatusQuery.data?.tables && dbStatusQuery.data.tables.length > 0 && (
+                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+                      {dbStatusQuery.data.tables.slice(0, 10).join('\n')}
+                    </pre>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Button onClick={() => runMigrationsMutation.mutate()} disabled={runMigrationsMutation.isPending}>
+                      {runMigrationsMutation.isPending ? t('common.loading') : 'Run Migrations'}
+                    </Button>
+                    <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/db/status'] })}>Refresh</Button>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">ExtremeSMS Key</span>
+                    {(config?.config?.extreme_api_key) ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Timezone</span>
+                    {(config?.config?.timezone) ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Client Rate per SMS</span>
+                    {(config?.config?.client_rate_per_sms) ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Extreme Cost per SMS</span>
+                    {(config?.config?.extreme_cost_per_sms) ? <Badge>Configured</Badge> : <Badge variant="secondary">Not set</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Note: JWT/Session secrets are stored in server environment and not displayed.
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
