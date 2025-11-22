@@ -874,17 +874,7 @@ export class DbStorage implements IStorage {
         console.error('❌ Database connectivity check failed:', err?.message || err);
         throw err;
       });
-      // Attempt migrations if folder exists and migrations are enabled
-      try {
-        const migrationsFolder = path.resolve(import.meta.dirname, '..', 'migrations');
-        if (process.env.RUN_DB_MIGRATIONS !== 'false') {
-          const { migrate } = await import('drizzle-orm/node-postgres/migrator');
-          await migrate(dbInstance, { migrationsFolder });
-          console.log('✅ Database migrations applied (if any)');
-        }
-      } catch (e: any) {
-        console.warn('⚠️  Skipping migrations (folder missing or already up to date):', e?.message || e);
-      }
+      
       
       // Cleanup on process exit
       process.on('SIGINT', async () => {

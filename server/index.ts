@@ -245,6 +245,29 @@ app.use((req, res, next) => {
   console.log('🔧 Registering routes...');
   let server;
   try {
+    // Apply database migrations during startup (outside of constructors)
+    try {
+      if (process.env.DATABASE_URL && process.env.RUN_DB_MIGRATIONS !== 'false') {
+        const connectionString = process.env.DATABASE_URL;
+        const shouldUseSSL = () => {
+          if (!connectionString) return false;
+          if (process.env.POSTGRES_SSL === 'true') return true;
+          return connectionString.includes('sslmode=require') || /neon\.tech|railway/i.test(connectionString);
+        };
+        const { Pool } = await import('pg');
+        const { drizzle } = await import('drizzle-orm/node-postgres');
+        const { migrate } = await import('drizzle-orm/node-postgres/migrator');
+        const pool = new Pool(shouldUseSSL() ? { connectionString, ssl: { rejectUnauthorized: false } } : { connectionString });
+        const db = drizzle(pool);
+        const migrationsFolder = path.resolve(import.meta.dirname, '..', 'migrations');
+        await migrate(db, { migrationsFolder });
+        await pool.end();
+        console.log('✅ Database migrations applied at startup');
+      }
+    } catch (e: any) {
+      console.warn('⚠️  Startup migrations skipped or failed:', e?.message || e);
+    }
+
     server = await registerRoutes(app);
     console.log('✅ Routes registered successfully');
   } catch (error) {
