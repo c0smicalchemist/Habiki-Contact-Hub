@@ -1,0 +1,7 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="60" fill="none"/>
+  <text x="20" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#3b82f6">Yubin</text>
+  <text x="90" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1e40af">Dash</text>
+  <circle cx="160" cy="15" r="3" fill="#ef4444"/>
+  <path d="M170 30 L175 25 L180 30 L185 25 L190 30" stroke="#3b82f6" stroke-width="2" fill="none"/>
+</svg>
