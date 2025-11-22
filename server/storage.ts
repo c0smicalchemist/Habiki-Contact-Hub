@@ -849,7 +849,7 @@ export class DbStorage implements IStorage {
         throw new Error('DATABASE_URL environment variable is not set');
       }
 
-      poolInstance = new Pool({ connectionString });
+      poolInstance = new Pool({ connectionString, ssl: { rejectUnauthorized: false } });
       dbInstance = drizzle(poolInstance, {
         schema: {
           users,
