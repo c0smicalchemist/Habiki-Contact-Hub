@@ -852,12 +852,15 @@ export const translations = {
     'common.active': '活跃',
     'common.inactive': '不活跃',
     'common.refresh': '刷新',
+*/
   }
 };
 
 export function translate(key: string, lang: Language): string {
   return (translations[lang] as Record<string, string>)[key] || key;
 }
+*/
+/*
     // Admin Webhook section
     'admin.webhook.suggestedUrl': 'Suggested Webhook URL (current environment)',
     'admin.webhook.configuredUrl': 'Configured Webhook URL',
