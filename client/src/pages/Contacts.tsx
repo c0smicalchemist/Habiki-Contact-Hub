@@ -263,9 +263,10 @@ export default function Contacts() {
   const handleExportCSV = async () => {
     try {
       const token = localStorage.getItem('token');
-      const apiUrl = effectiveUserId 
+      const base = effectiveUserId 
         ? `/api/contacts/export/csv?userId=${effectiveUserId}`
         : '/api/contacts/export/csv';
+      const apiUrl = includeBusiness ? `${base}${base.includes('?') ? '&' : '?'}includeBusiness=true` : base;
       const response = await fetch(apiUrl, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {}
       });
@@ -424,6 +425,9 @@ export default function Contacts() {
             <Download className="h-4 w-4 mr-2" />
             {t('contacts.export')}
           </Button>
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={includeBusiness} onChange={(e) => setIncludeBusiness(e.target.checked)} /> Include business
+          </label>
 
           <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
             <DialogTrigger asChild>

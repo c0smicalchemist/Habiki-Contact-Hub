@@ -2594,6 +2594,8 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
       
       const contacts = await storage.getContactsByUserId(targetUserId);
       const groups = await storage.getContactGroupsByUserId(targetUserId);
+      const clientProfile = await storage.getClientProfileByUserId(targetUserId);
+      const includeBusiness = String(req.query.includeBusiness || '').toLowerCase() === 'true';
       
       // Create a map of groupId -> businessUnitPrefix
       const groupPrefixMap = new Map<string, string>();
@@ -2614,6 +2616,10 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
         if (contact.groupId && groupPrefixMap.has(contact.groupId)) {
           const prefix = groupPrefixMap.get(contact.groupId)!;
           business = prefix;
+        }
+
+        if (!business && includeBusiness && clientProfile?.businessName) {
+          business = clientProfile.businessName;
         }
         
         // CSV row: "Name,PhoneNumber,Business,Actions"

@@ -135,6 +135,18 @@ export default function AdminDashboard() {
   const secretsStatusQuery = useQuery<{ success: boolean; configured: Record<string, boolean> }>({
     queryKey: ['/api/admin/secrets/status']
   });
+  const setWebhookUrlMutation = useMutation({
+    mutationFn: async (url: string) => {
+      return await apiRequest('/api/admin/webhook/set-url', { method: 'POST', body: JSON.stringify({ url }) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/secrets/status'] });
+      toast({ title: 'Success', description: 'Webhook URL updated' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to set webhook URL', variant: 'destructive' });
+    }
+  });
   const rotateSecretMutation = useMutation({
     mutationFn: async (key: string) => {
       return await apiRequest('/api/admin/secrets/rotate', { method: 'POST', body: JSON.stringify({ key }) });
