@@ -28,6 +28,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.stats.online': 'Online',
     'dashboard.stats.operational': 'Operational',
     'dashboard.buttons.viewDocs': 'View API Docs',
+    'dashboard.buttons.addCredits': 'Add Credits',
 
     'clientDashboard.sendSms': 'Send SMS',
     'clientDashboard.sendSmsDesc': 'Compose and send messages to contacts',
@@ -41,6 +42,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'clientDashboard.perMessage': 'Per message',
     'clientDashboard.estimatedMessages': 'Estimated messages',
     'clientDashboard.apiKeys': 'API Keys',
+    'clientDashboard.apiKeysDesc': 'API key(s)',
+    'clientDashboard.noApiKeys': 'No API keys yet',
+    'clientDashboard.generateKey': 'Generate API Key',
 
     'messageHistory.title': 'Message History',
     'messageHistory.subtitle': 'Sent messages and delivery status',
@@ -82,6 +86,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'inbox.success.replySent': 'Reply sent',
     'inbox.error.replyFailed': 'Failed to send reply',
     'inbox.error.enterReply': 'Please enter a reply',
+    'inbox.retrieveInbox': 'Retrieve Inbox',
+    'inbox.retrieveSuccess': 'Inbox retrieved from provider',
+    'inbox.retrieveFailed': 'Failed to retrieve inbox',
 
     'docs.webhook.title': 'Webhook Configuration (2-Way SMS)',
     'docs.webhook.description': 'Configure this webhook URL in your SMS provider to receive incoming messages',
@@ -174,6 +181,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.stats.online': '在线',
     'dashboard.stats.operational': '运行正常',
     'dashboard.buttons.viewDocs': '查看 API 文档',
+    'dashboard.buttons.addCredits': '充值',
 
     'clientDashboard.sendSms': '发送短信',
     'clientDashboard.sendSmsDesc': '撰写并发送短信给联系人',
@@ -187,6 +195,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'clientDashboard.perMessage': '每条',
     'clientDashboard.estimatedMessages': '可发送条数估算',
     'clientDashboard.apiKeys': 'API密钥',
+    'clientDashboard.apiKeysDesc': '个 API 密钥',
+    'clientDashboard.noApiKeys': '暂无 API 密钥',
+    'clientDashboard.generateKey': '生成 API 密钥',
 
     'messageHistory.title': '短信历史',
     'messageHistory.subtitle': '已发送短信与送达状态',
@@ -228,6 +239,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'inbox.success.replySent': '回复已发送',
     'inbox.error.replyFailed': '发送回复失败',
     'inbox.error.enterReply': '请输入回复内容',
+    'inbox.retrieveInbox': '拉取收件箱',
+    'inbox.retrieveSuccess': '已从服务商拉取收件箱',
+    'inbox.retrieveFailed': '拉取收件箱失败',
 
     'docs.webhook.title': 'Webhook配置（双向短信）',
     'docs.webhook.description': '请在短信服务商的控制台设置此Webhook URL以接收来信',

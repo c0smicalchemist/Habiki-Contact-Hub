@@ -10,10 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
 export function DashboardHeader() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { t } = useLanguage();
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
+  const [retrieving, setRetrieving] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -44,6 +45,27 @@ export function DashboardHeader() {
     toast({ title: t('common.success'), description: 'Refresh successful' });
   };
 
+  const handleRetrieveInbox = async () => {
+    try {
+      setRetrieving(true);
+      const token = localStorage.getItem('token');
+      await fetch('/api/web/inbox/retrieve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      await queryClient.invalidateQueries({ queryKey: ['/api/web/inbox'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/web/inbox'] });
+      toast({ title: t('common.success'), description: t('inbox.retrieveSuccess') });
+    } catch (e) {
+      toast({ title: t('common.error'), description: t('inbox.retrieveFailed'), variant: 'destructive' });
+    } finally {
+      setRetrieving(false);
+    }
+  };
+
   return (
     <header className="border-b border-border bg-background">
       <div className="flex items-center justify-between h-16 px-6">
@@ -53,6 +75,16 @@ export function DashboardHeader() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <LanguageToggle />
+          {location === '/inbox' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRetrieveInbox}
+              data-testid="button-retrieve-inbox"
+            >
+              {retrieving ? 'Retrieving…' : t('inbox.retrieveInbox')}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
