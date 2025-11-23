@@ -148,6 +148,11 @@ export const translations = {
     'admin.config.error.saveFailed': 'Failed to save configuration',
     'admin.config.error.connectionFailed': 'Failed to connect to ExtremeSMS API',
     'admin.config.error.updatePhonesFailed': 'Failed to update phone numbers',
+    'admin.webhook.suggestedUrl': 'Suggested Webhook URL (current environment)',
+    'admin.webhook.configuredUrl': 'Configured Webhook URL',
+    'admin.webhook.setToSuggested': 'Set to suggested',
+    'admin.envDb.title': 'Environment & Database',
+    'admin.envDb.runMigrations': 'Run Migrations',
     
     // API Documentation
     'docs.title': 'API Documentation',
@@ -421,6 +426,7 @@ export const translations = {
     'common.next': 'Next',
     'common.active': 'Active',
     'common.inactive': 'Inactive',
+    'common.refresh': 'Refresh',
   },
   zh: {
     // Landing Page
@@ -569,6 +575,11 @@ export const translations = {
     'admin.config.error.saveFailed': '保存配置失败',
     'admin.config.error.connectionFailed': '连接ExtremeSMS API失败',
     'admin.config.error.updatePhonesFailed': '更新电话号码失败',
+    'admin.webhook.suggestedUrl': '建议的Webhook URL（当前环境）',
+    'admin.webhook.configuredUrl': '已配置的Webhook URL',
+    'admin.webhook.setToSuggested': '设置为建议值',
+    'admin.envDb.title': '环境与数据库',
+    'admin.envDb.runMigrations': '运行迁移',
     
     // API Documentation
     'docs.title': 'API文档',
@@ -840,6 +851,7 @@ export const translations = {
     'common.next': '下一步',
     'common.active': '活跃',
     'common.inactive': '不活跃',
+    'common.refresh': '刷新',
   }
 };
 
