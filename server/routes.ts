@@ -2901,6 +2901,10 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
       const targetUserId = (req.user.role === 'admin' && req.query.userId) 
         ? req.query.userId 
         : req.user.userId;
+      // Ensure example exists for clients; seed is idempotent
+      if (req.user.role !== 'admin') {
+        try { await storage.seedExampleData(targetUserId); } catch {}
+      }
       let messages: any[] = [];
       try {
         messages = await storage.getIncomingMessagesByUserId(targetUserId, limit);
