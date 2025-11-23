@@ -431,10 +431,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Client: seed example conversation for self
-  app.post('/api/web/inbox/seed-example', authenticateToken, async (req: any, res) => {
+  // Admin: seed/delete example for any user
+  app.post('/api/web/inbox/seed-example', authenticateToken, requireAdmin, async (req: any, res) => {
     try {
-      const targetUserId = req.user.userId;
+      const targetUserId = (req.body && req.body.userId) || req.user.userId;
       await storage.seedExampleData(targetUserId);
       res.json({ success: true });
     } catch (e: any) {
@@ -442,10 +442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Client: delete example conversation for self
-  app.post('/api/web/inbox/seed-delete', authenticateToken, async (req: any, res) => {
+  app.post('/api/web/inbox/seed-delete', authenticateToken, requireAdmin, async (req: any, res) => {
     try {
-      const targetUserId = req.user.userId;
+      const targetUserId = (req.body && req.body.userId) || req.user.userId;
       await storage.deleteExampleData(targetUserId);
       res.json({ success: true });
     } catch (e: any) {
@@ -2903,7 +2902,12 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
         ? req.query.userId 
         : req.user.userId;
       
-      const messages = await storage.getIncomingMessagesByUserId(targetUserId, limit);
+      let messages = await storage.getIncomingMessagesByUserId(targetUserId, limit);
+      // Auto-seed example for clients if inbox is empty (make example permanent)
+      if (messages.length === 0 && req.user.role !== 'admin') {
+        await storage.seedExampleData(targetUserId);
+        messages = await storage.getIncomingMessagesByUserId(targetUserId, limit);
+      }
       
       res.json({
         success: true,

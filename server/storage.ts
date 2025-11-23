@@ -131,6 +131,7 @@ export interface IStorage {
   // Example/Seed data methods
   seedExampleData(userId: string): Promise<void>; // Add example data for new users
   deleteExampleData(userId: string): Promise<void>;
+  hasExampleData(userId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -490,6 +491,8 @@ export class MemStorage implements IStorage {
   }
 
   async seedExampleData(userId: string): Promise<void> {
+    // Avoid duplicates
+    if (await this.hasExampleData(userId)) return;
     // Add one example contact
     await this.createContact({
       userId,
@@ -502,7 +505,7 @@ export class MemStorage implements IStorage {
       isExample: true
     });
 
-    // Add one example sent message
+    // Add example sent/received thread
     await this.createMessageLog({
       userId,
       messageId: 'example-msg-001',
@@ -534,6 +537,35 @@ export class MemStorage implements IStorage {
       isRead: false,
       isExample: true
     });
+    await this.createMessageLog({
+      userId,
+      messageId: 'example-msg-002',
+      endpoint: 'send-single',
+      recipient: '+1-555-0123',
+      status: 'delivered',
+      costPerMessage: '0.0050',
+      chargePerMessage: '0.0075',
+      totalCost: '0.01',
+      totalCharge: '0.01',
+      messageCount: 1,
+      requestPayload: JSON.stringify({ to: '+1-555-0123', message: 'Great to hear from you. How can we help?' }),
+      responsePayload: JSON.stringify({ success: true }),
+      isExample: true
+    });
+    await this.createIncomingMessage({
+      userId,
+      firstname: 'Alex',
+      lastname: 'Demo',
+      business: 'Demo Co',
+      from: '+1-555-0123',
+      message: 'We would like to confirm our order details.',
+      status: 'received',
+      receiver: '+1-555-9999',
+      timestamp: new Date(),
+      messageId: 'example-incoming-002',
+      isRead: false,
+      isExample: true
+    });
   }
 
   async deleteExampleData(userId: string): Promise<void> {
@@ -552,6 +584,18 @@ export class MemStorage implements IStorage {
         this.contacts.delete(id);
       }
     }
+  }
+
+  async hasExampleData(userId: string): Promise<boolean> {
+    const inc = await this.db.select().from(incomingMessages).where(sql`${incomingMessages.userId} = ${userId} AND ${incomingMessages.isExample} = true`).limit(1);
+    const logs = await this.db.select().from(messageLogs).where(sql`${messageLogs.userId} = ${userId} AND ${messageLogs.isExample} = true`).limit(1);
+    return inc.length > 0 || logs.length > 0;
+  }
+
+  async hasExampleData(userId: string): Promise<boolean> {
+    const hasIncoming = Array.from(this.incomingMessages.values()).some((m) => (m as any).userId === userId && (m as any).isExample);
+    const hasLogs = Array.from(this.messageLogs.values()).some((m) => (m as any).userId === userId && (m as any).isExample);
+    return hasIncoming || hasLogs;
   }
 
   async deleteExampleData(userId: string): Promise<void> {
@@ -1421,6 +1465,9 @@ export class DbStorage implements IStorage {
   }
 
   async seedExampleData(userId: string): Promise<void> {
+    const existsInc = await this.db.select().from(incomingMessages).where(sql`${incomingMessages.userId} = ${userId} AND ${incomingMessages.isExample} = true`).limit(1);
+    const existsLogs = await this.db.select().from(messageLogs).where(sql`${messageLogs.userId} = ${userId} AND ${messageLogs.isExample} = true`).limit(1);
+    if (existsInc.length > 0 || existsLogs.length > 0) return;
     // Add one example contact
     await this.db.insert(contacts).values({
       userId,
@@ -1433,7 +1480,7 @@ export class DbStorage implements IStorage {
       isExample: true
     });
 
-    // Add one example sent message
+    // Add example sent/received thread
     await this.db.insert(messageLogs).values({
       userId,
       messageId: 'example-msg-001',
@@ -1462,6 +1509,35 @@ export class DbStorage implements IStorage {
       receiver: '+1-555-9999',
       timestamp: new Date(),
       messageId: 'example-incoming-001',
+      isRead: false,
+      isExample: true
+    });
+    await this.db.insert(messageLogs).values({
+      userId,
+      messageId: 'example-msg-002',
+      endpoint: 'send-single',
+      recipient: '+1-555-0123',
+      status: 'delivered',
+      costPerMessage: '0.0050',
+      chargePerMessage: '0.0075',
+      totalCost: '0.01',
+      totalCharge: '0.01',
+      messageCount: 1,
+      requestPayload: JSON.stringify({ to: '+1-555-0123', message: 'Great to hear from you. How can we help?' }),
+      responsePayload: JSON.stringify({ success: true }),
+      isExample: true
+    });
+    await this.db.insert(incomingMessages).values({
+      userId,
+      firstname: 'Alex',
+      lastname: 'Demo',
+      business: 'Demo Co',
+      from: '+1-555-0123',
+      message: 'We would like to confirm our order details.',
+      status: 'received',
+      receiver: '+1-555-9999',
+      timestamp: new Date(),
+      messageId: 'example-incoming-002',
       isRead: false,
       isExample: true
     });
