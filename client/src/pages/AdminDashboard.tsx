@@ -470,9 +470,9 @@ export default function AdminDashboard() {
           <TabsList>
             <TabsTrigger value="clients" data-testid="tab-clients">{t('admin.tabs.clients')}</TabsTrigger>
             <TabsTrigger value="configuration" data-testid="tab-configuration">{t('admin.tabs.configuration')}</TabsTrigger>
-            <TabsTrigger value="webhook" data-testid="tab-webhook">Webhook Setup</TabsTrigger>
-            <TabsTrigger value="testing" data-testid="tab-testing">API Testing</TabsTrigger>
-            <TabsTrigger value="logs" data-testid="tab-logs">Error Logs</TabsTrigger>
+            <TabsTrigger value="webhook" data-testid="tab-webhook">{t('admin.tabs.webhook')}</TabsTrigger>
+            <TabsTrigger value="testing" data-testid="tab-testing">{t('admin.tabs.testing')}</TabsTrigger>
+            <TabsTrigger value="logs" data-testid="tab-logs">{t('admin.tabs.logs')}</TabsTrigger>
             <TabsTrigger value="monitoring" data-testid="tab-monitoring">{t('admin.tabs.monitoring')}</TabsTrigger>
           </TabsList>
 
@@ -637,9 +637,9 @@ export default function AdminDashboard() {
         <TabsContent value="configuration" className="space-y-4">
           <Card className="border border-border/60">
             <CardHeader>
-              <CardTitle>ExtremeSMS Configuration</CardTitle>
+              <CardTitle>{t('admin.config.title')}</CardTitle>
               <CardDescription>
-                Configure the connection to ExtremeSMS API. Changes will affect all clients.
+                {t('admin.config.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -750,7 +750,7 @@ export default function AdminDashboard() {
 
           <Card className="border border-border/60">
             <CardHeader>
-              <CardTitle>Environment & Database</CardTitle>
+              <CardTitle>{t('admin.envDb.title')}</CardTitle>
               <CardDescription>Overview of critical configuration and database state</CardDescription>
             </CardHeader>
             <CardContent>
@@ -776,9 +776,9 @@ export default function AdminDashboard() {
                   )}
                   <div className="flex items-center gap-2">
                     <Button onClick={() => runMigrationsMutation.mutate()} disabled={runMigrationsMutation.isPending}>
-                      {runMigrationsMutation.isPending ? t('common.loading') : 'Run Migrations'}
+                      {runMigrationsMutation.isPending ? t('common.loading') : t('admin.envDb.runMigrations')}
                     </Button>
-                    <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/db/status'] })}>Refresh</Button>
+                    <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/db/status'] })}>{t('common.refresh')}</Button>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -843,59 +843,59 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="webhook" className="space-y-4">
-          <Card className="border border-border/60">
-            <CardHeader>
-              <CardTitle>Webhook Configuration (2-Way SMS)</CardTitle>
-              <CardDescription>
-                Configure this webhook URL in your SMS provider account to receive incoming messages
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <Label className="text-base font-semibold">Suggested Webhook URL (current environment)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={secretsStatusQuery.data?.suggestedWebhook || ''}
-                    readOnly
-                    className="font-mono text-sm"
-                    data-testid="input-webhook-url"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      const val = secretsStatusQuery.data?.suggestedWebhook || '';
-                      navigator.clipboard.writeText(val);
-                      toast({ title: "Copied!", description: "Webhook URL copied to clipboard" });
-                    }}
-                    data-testid="button-copy-webhook"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Configure this URL in your SMS provider dashboard under "Incoming Messages" or webhook settings
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                  <div>
-                    <Label>Configured Webhook URL</Label>
-                    <Input
-                      defaultValue={secretsStatusQuery.data?.configuredWebhook || ''}
-                      onBlur={(e) => {
-                        const url = e.target.value.trim();
-                        if (url) setWebhookUrlMutation.mutate(url);
-                      }}
-                      className="font-mono text-sm"
-                    />
+              <Card className="border border-border/60">
+                <CardHeader>
+                  <CardTitle>{t('docs.webhook.title')}</CardTitle>
+                  <CardDescription>
+                    {t('docs.webhook.description')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">{t('admin.webhook.suggestedUrl')}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={secretsStatusQuery.data?.suggestedWebhook || ''}
+                        readOnly
+                        className="font-mono text-sm"
+                        data-testid="input-webhook-url"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          const val = secretsStatusQuery.data?.suggestedWebhook || '';
+                          navigator.clipboard.writeText(val);
+                          toast({ title: "Copied!", description: "Webhook URL copied to clipboard" });
+                        }}
+                        data-testid="button-copy-webhook"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Configure this URL in your SMS provider dashboard under "Incoming Messages" or webhook settings
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                      <div>
+                        <Label>{t('admin.webhook.configuredUrl')}</Label>
+                        <Input
+                          defaultValue={secretsStatusQuery.data?.configuredWebhook || ''}
+                          onBlur={(e) => {
+                            const url = e.target.value.trim();
+                            if (url) setWebhookUrlMutation.mutate(url);
+                          }}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button variant="outline" onClick={() => {
+                          const val = secretsStatusQuery.data?.suggestedWebhook || '';
+                          if (val) setWebhookUrlMutation.mutate(val);
+                        }}>{t('admin.webhook.setToSuggested')}</Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-end">
-                    <Button variant="outline" onClick={() => {
-                      const val = secretsStatusQuery.data?.suggestedWebhook || '';
-                      if (val) setWebhookUrlMutation.mutate(val);
-                    }}>Set to suggested</Button>
-                  </div>
-                </div>
-              </div>
 
               <div className="border-t pt-6 space-y-3">
                 <h3 className="text-base font-semibold">Setup Instructions</h3>

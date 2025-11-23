@@ -108,6 +108,9 @@ export const translations = {
     'admin.tabs.clients': 'Clients',
     'admin.tabs.configuration': 'Configuration',
     'admin.tabs.monitoring': 'Monitoring',
+    'admin.tabs.webhook': 'Webhook Setup',
+    'admin.tabs.testing': 'API Testing',
+    'admin.tabs.logs': 'Error Logs',
     
     'admin.clients.title': 'Client Management',
     'admin.clients.subtitle': 'View and manage all connected clients',
@@ -526,6 +529,9 @@ export const translations = {
     'admin.tabs.clients': '客户',
     'admin.tabs.configuration': '配置',
     'admin.tabs.monitoring': '监控',
+    'admin.tabs.webhook': 'Webhook设置',
+    'admin.tabs.testing': 'API测试',
+    'admin.tabs.logs': '错误日志',
     
     'admin.clients.title': '客户管理',
     'admin.clients.subtitle': '查看和管理所有已连接的客户',
@@ -840,3 +846,17 @@ export const translations = {
 export function translate(key: string, lang: Language): string {
   return (translations[lang] as Record<string, string>)[key] || key;
 }
+    // Admin Webhook section
+    'admin.webhook.suggestedUrl': 'Suggested Webhook URL (current environment)',
+    'admin.webhook.configuredUrl': 'Configured Webhook URL',
+    'admin.webhook.setToSuggested': 'Set to suggested',
+    'admin.envDb.title': 'Environment & Database',
+    'admin.envDb.runMigrations': 'Run Migrations',
+    'common.refresh': 'Refresh',
+    // Admin Webhook section
+    'admin.webhook.suggestedUrl': '建议的Webhook URL（当前环境）',
+    'admin.webhook.configuredUrl': '已配置的Webhook URL',
+    'admin.webhook.setToSuggested': '设置为建议值',
+    'admin.envDb.title': '环境与数据库',
+    'admin.envDb.runMigrations': '运行迁移',
+    'common.refresh': '刷新',

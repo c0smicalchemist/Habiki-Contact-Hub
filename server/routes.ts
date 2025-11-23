@@ -2901,8 +2901,44 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
       const targetUserId = (req.user.role === 'admin' && req.query.userId) 
         ? req.query.userId 
         : req.user.userId;
+      let messages: any[] = [];
+      try {
+        messages = await storage.getIncomingMessagesByUserId(targetUserId, limit);
+      } catch (err: any) {
+        // If table is missing, bootstrap schema and retry once
+        const errMsg = err?.message || String(err);
+        if (/relation\s+"?incoming_messages"?\s+does\s+not\s+exist/i.test(errMsg) || err?.code === '42P01') {
+          try {
+            const { Pool } = await import('pg');
+            const { drizzle } = await import('drizzle-orm/node-postgres');
+            const { migrate } = await import('drizzle-orm/node-postgres/migrator');
+            const path = await import('path');
+            const url = process.env.DATABASE_URL!;
+            const pool = new Pool(url.includes('sslmode=require') || process.env.POSTGRES_SSL === 'true' ? { connectionString: url, ssl: { rejectUnauthorized: false } } : { connectionString: url });
+            const db = drizzle(pool);
+            const migrationsFolder = path.resolve(import.meta.dirname, '..', 'migrations');
+            try {
+              await migrate(db, { migrationsFolder });
+            } catch {
+              const exec = async (q: string) => { try { await pool.query(q); } catch {} };
+              await exec(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+              await exec(`CREATE TABLE IF NOT EXISTS users (id varchar PRIMARY KEY DEFAULT gen_random_uuid(), email text NOT NULL UNIQUE, password text NOT NULL, name text NOT NULL, company text, role text NOT NULL DEFAULT 'client', is_active boolean NOT NULL DEFAULT true, reset_token text, reset_token_expiry timestamp, created_at timestamp NOT NULL DEFAULT now())`);
+              await exec(`CREATE TABLE IF NOT EXISTS incoming_messages (id varchar PRIMARY KEY DEFAULT gen_random_uuid(), user_id varchar, "from" text NOT NULL, firstname text, lastname text, business text, message text NOT NULL, status text NOT NULL, matched_block_word text, receiver text NOT NULL, usedmodem text, port text, timestamp timestamp NOT NULL, message_id text NOT NULL, is_read boolean NOT NULL DEFAULT false, is_example boolean NOT NULL DEFAULT false, created_at timestamp NOT NULL DEFAULT now())`);
+              await exec(`CREATE INDEX IF NOT EXISTS incoming_user_id_idx ON incoming_messages(user_id)`);
+              await exec(`CREATE INDEX IF NOT EXISTS incoming_receiver_idx ON incoming_messages(receiver)`);
+            }
+            await pool.end();
+            messages = await storage.getIncomingMessagesByUserId(targetUserId, limit);
+          } catch (bootErr: any) {
+            console.error('Inbox bootstrap error:', bootErr?.message || bootErr);
+            return res.status(500).json({ error: 'Failed to retrieve inbox' });
+          }
+        } else {
+          console.error('Web UI inbox error:', err);
+          return res.status(500).json({ error: 'Failed to retrieve inbox' });
+        }
+      }
       
-      let messages = await storage.getIncomingMessagesByUserId(targetUserId, limit);
       // Auto-seed example for clients if inbox is empty (make example permanent)
       if (messages.length === 0 && req.user.role !== 'admin') {
         await storage.seedExampleData(targetUserId);
