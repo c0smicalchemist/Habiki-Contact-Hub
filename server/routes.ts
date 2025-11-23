@@ -431,6 +431,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client: seed example conversation for self
+  app.post('/api/web/inbox/seed-example', authenticateToken, async (req: any, res) => {
+    try {
+      const targetUserId = req.user.userId;
+      await storage.seedExampleData(targetUserId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || String(e) });
+    }
+  });
+
+  // Client: delete example conversation for self
+  app.post('/api/web/inbox/seed-delete', authenticateToken, async (req: any, res) => {
+    try {
+      const targetUserId = req.user.userId;
+      await storage.deleteExampleData(targetUserId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || String(e) });
+    }
+  });
+
   // Persist webhook URL
   app.post('/api/admin/webhook/set-url', authenticateToken, requireAdmin, async (req, res) => {
     try {

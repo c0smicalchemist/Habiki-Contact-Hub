@@ -130,6 +130,40 @@ export default function Inbox() {
     } catch {}
   };
 
+  // Client actions (no admin rights required)
+  const examplePhone = '+1-555-0123';
+  const seedExampleClient = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('/api/web/inbox/seed-example', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/web/inbox", undefined] });
+      await queryClient.refetchQueries({ queryKey: ["/api/web/inbox", undefined] });
+      setSelectedPhoneNumber(examplePhone);
+      setShowConversationDialog(true);
+    } catch {}
+  };
+
+  const deleteExampleClient = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('/api/web/inbox/seed-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/web/inbox", undefined] });
+      await queryClient.refetchQueries({ queryKey: ["/api/web/inbox", undefined] });
+    } catch {}
+  };
+
   const handleOpenConversation = (phoneNumber: string) => {
     setSelectedPhoneNumber(phoneNumber);
     setShowConversationDialog(true);
@@ -200,13 +234,20 @@ export default function Inbox() {
                 <p className="text-muted-foreground">
                   {t('inbox.noMessagesDesc')}
                 </p>
-                {isAdmin && (
-                  <div className="mt-6 flex items-center gap-2 justify-center">
-                    <Button onClick={seedExample} data-testid="button-seed-example-client">Add Example (Selected Client)</Button>
-                    <Button variant="outline" onClick={seedExampleForAdmin} data-testid="button-seed-example-admin">Add Example (Admin)</Button>
-                    <Button variant="destructive" onClick={deleteExample} data-testid="button-delete-example">Delete Example</Button>
-                  </div>
-                )}
+                <div className="mt-6 flex items-center gap-2 justify-center">
+                  {isAdmin ? (
+                    <>
+                      <Button onClick={seedExample} data-testid="button-seed-example-client">Add Example (Selected Client)</Button>
+                      <Button variant="outline" onClick={seedExampleForAdmin} data-testid="button-seed-example-admin">Add Example (Admin)</Button>
+                      <Button variant="destructive" onClick={deleteExample} data-testid="button-delete-example">Delete Example</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button onClick={seedExampleClient} data-testid="button-seed-example">Add Example Conversation</Button>
+                      <Button variant="destructive" onClick={deleteExampleClient} data-testid="button-delete-example-client">Delete Example</Button>
+                    </>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ) : (
