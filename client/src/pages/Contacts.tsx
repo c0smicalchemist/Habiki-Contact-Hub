@@ -91,6 +91,7 @@ export default function Contacts() {
 
   const isAdmin = profile?.user?.role === 'admin';
   const effectiveUserId = isAdmin && !isAdminMode && selectedClientId ? selectedClientId : undefined;
+  const [includeBusiness, setIncludeBusiness] = useState(false);
 
   // Fetch contact groups
   const { data: groupsData } = useQuery({
