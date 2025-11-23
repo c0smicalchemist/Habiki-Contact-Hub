@@ -832,6 +832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         credits: profile?.credits || "0.00",
         currency: profile?.currency || "USD",
+        businessName: profile?.businessName || null,
         ratePerSms: clientRate,
         apiKeys: apiKeys.map(key => ({
           id: key.id,

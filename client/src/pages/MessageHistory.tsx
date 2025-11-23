@@ -61,12 +61,19 @@ export default function MessageHistory() {
   // Fetch current user profile
   const { data: profile } = useQuery<{
     user: { id: string; email: string; name: string; company: string | null; role: string };
+    businessName?: string | null;
   }>({
     queryKey: ['/api/client/profile']
   });
 
   const isAdmin = profile?.user?.role === 'admin';
   const effectiveUserId = isAdmin && !isAdminMode && selectedClientId ? selectedClientId : undefined;
+
+  // Admin clients list (to resolve selected client's business name)
+  const { data: adminClients } = useQuery<{ success: boolean; clients: Array<{ id: string; email: string; name: string; businessName?: string | null }> }>({
+    queryKey: ['/api/admin/clients'],
+    enabled: !!isAdmin,
+  });
 
   // Fetch message logs
   const { data: messagesData, isLoading } = useQuery<{ 
@@ -292,6 +299,7 @@ export default function MessageHistory() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('messageHistory.table.recipient')}</TableHead>
+                        <TableHead>Business Name</TableHead>
                         <TableHead>{t('messageHistory.table.message')}</TableHead>
                         <TableHead>Message ID</TableHead>
                         <TableHead>{t('messageHistory.table.type')}</TableHead>
@@ -306,6 +314,16 @@ export default function MessageHistory() {
                         <TableRow key={msg.id} data-testid={`row-message-${msg.id}`}>
                           <TableCell className="font-mono text-sm" data-testid={`recipient-${msg.id}`}>
                             {getRecipientDisplay(msg)}
+                          </TableCell>
+                          <TableCell className="max-w-[12rem] truncate">
+                            <Badge variant="outline" className="max-w-[12rem] truncate">
+                              {(() => {
+                                const bn = effectiveUserId
+                                  ? (adminClients?.clients?.find(c => c.id === effectiveUserId)?.businessName || '—')
+                                  : (profile?.businessName || profile?.user?.company || '—');
+                                return bn || '—';
+                              })()}
+                            </Badge>
                           </TableCell>
                           <TableCell className="max-w-xs truncate" data-testid={`message-${msg.id}`}>
                             {getMessagePreview(msg)}
