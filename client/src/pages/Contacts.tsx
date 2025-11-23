@@ -658,6 +658,7 @@ export default function Contacts() {
                   <TableHead>{t("contacts.table.phone")}</TableHead>
                   <TableHead>{t("contacts.table.email")}</TableHead>
                   <TableHead>{t("contacts.table.group")}</TableHead>
+                  <TableHead>Business</TableHead>
                   <TableHead>Sync Status</TableHead>
                   <TableHead>{t("contacts.table.actions")}</TableHead>
                 </TableRow>
@@ -673,6 +674,13 @@ export default function Contacts() {
                         <Badge variant="secondary">
                           {groups.find((g: ContactGroup) => g.id === contact.groupId)?.name}
                         </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {profile?.user?.company ? (
+                        <Badge variant="outline">{profile.user.company}</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>

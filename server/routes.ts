@@ -2503,6 +2503,22 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
       }));
 
       const created = await storage.createContactsBulk(insertContacts);
+
+      const profile = await storage.getClientProfileByUserId(targetUserId);
+      const businessName = profile?.businessName || null;
+      const clientContactPayload = created.map((c: any) => ({
+        userId: targetUserId,
+        phoneNumber: c.phoneNumber,
+        firstname: c.name ? c.name.split(' ')[0] : null,
+        lastname: c.name && c.name.split(' ').length > 1 ? c.name.split(' ').slice(1).join(' ') : null,
+        business: businessName || null
+      }));
+      try {
+        await storage.createClientContacts(clientContactPayload);
+      } catch (e) {
+        console.warn('Failed to create client_contacts for import:', e);
+      }
+
       res.json({ success: true, count: created.length, contacts: created });
     } catch (error) {
       console.error("Import contacts error:", error);
