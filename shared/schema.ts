@@ -113,6 +113,7 @@ export const incomingMessages = pgTable("incoming_messages", {
   receiver: text("receiver").notNull(), // Your phone number that received the SMS
   usedmodem: text("usedmodem"),
   port: text("port"),
+  extPayload: jsonb("ext_payload"),
   timestamp: timestamp("timestamp").notNull(), // From ExtremeSMS
   messageId: text("message_id").notNull(), // ExtremeSMS message ID
   isRead: boolean("is_read").notNull().default(false), // Track if message has been read

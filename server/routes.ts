@@ -1481,6 +1481,193 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public: ExtremeSMS webhook ingest (two-way SMS)
+  app.post('/api/webhook/extreme', async (req, res) => {
+    try {
+      const p = req.body || {};
+      const from = p.from || p.sender || p.msisdn;
+      const receiver = p.receiver || p.to || p.recipient;
+      const message = p.message || p.text || '';
+      const usedmodem = p.usedmodem || p.usemodem || null;
+      const port = p.port || null;
+      const messageId = p.messageId || p.id || `ext-${Date.now()}`;
+      const tsRaw = p.timestamp || p.time || Date.now();
+      const timestamp = new Date(typeof tsRaw === 'string' ? tsRaw : Number(tsRaw));
+
+      if (!from || !receiver || !message) {
+        return res.status(400).json({ success: false, error: 'Invalid webhook payload' });
+      }
+
+      // Route to user: 1) recent outbound to this recipient, 2) assigned number owner
+      let userId: string | undefined = await storage.findClientByRecipient(from);
+      if (!userId) {
+        const profile = await storage.getClientProfileByPhoneNumber(receiver);
+        userId = profile?.userId;
+      }
+
+      const created = await storage.createIncomingMessage({
+        userId,
+        from,
+        firstname: null,
+        lastname: null,
+        business: null,
+        message,
+        status: 'received',
+        matchedBlockWord: null,
+        receiver,
+        usedmodem,
+        port,
+        timestamp,
+        messageId,
+        extPayload: req.body ? req.body : null,
+      } as any);
+
+      // Persist last webhook diagnostics
+      await storage.setSystemConfig('last_webhook_event', JSON.stringify({ from, receiver, message, usedmodem, port }));
+      await storage.setSystemConfig('last_webhook_event_at', new Date().toISOString());
+      await storage.setSystemConfig('last_webhook_routed_user', created.userId || 'unassigned');
+
+      // Auto-capture contact for the routed user
+      if (created.userId) {
+        const existing = await storage.getClientContactsByUserId(created.userId);
+        if (!existing.find(c => c.phoneNumber === from)) {
+          const clientProfile = await storage.getClientProfileByUserId(created.userId);
+          await storage.createClientContact({
+            userId: created.userId,
+            phoneNumber: from,
+            firstname: null,
+            lastname: null,
+            business: clientProfile?.businessName || null,
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Extreme webhook ingest error:', error);
+      res.status(500).json({ success: false });
+    }
+  });
+
+  // Client: initial send (omit modem/port)
+  app.post('/api/sms/send', authenticateToken, async (req: any, res) => {
+    try {
+      const { recipient, message } = req.body || {};
+      if (!recipient || !message) return res.status(400).json({ error: 'recipient and message required' });
+
+      const extremeApiKey = await storage.getSystemConfig('extreme_api_key');
+      if (!extremeApiKey?.value) return res.status(400).json({ error: 'ExtremeSMS API key not configured' });
+
+      const payload = { recipient, message };
+      const response = await axios.post(`${EXTREMESMS_BASE_URL}/api/v2/sms/sendsingle`, payload, {
+        headers: {
+          'Authorization': `Bearer ${extremeApiKey.value}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Log message and auto-capture contact
+      await storage.createMessageLog({
+        userId: req.user.userId,
+        messageId: response.data?.messageId || `send-${Date.now()}`,
+        endpoint: 'send-single',
+        recipient,
+        recipients: null,
+        senderPhoneNumber: null,
+        status: 'sent',
+        costPerMessage: '0.0000',
+        chargePerMessage: '0.0000',
+        totalCost: '0.00',
+        totalCharge: '0.00',
+        messageCount: 1,
+        requestPayload: JSON.stringify(payload),
+        responsePayload: JSON.stringify(response.data || {}),
+        isExample: false,
+      } as any);
+
+      const existing = await storage.getClientContactsByUserId(req.user.userId);
+      if (!existing.find(c => c.phoneNumber === recipient)) {
+        const clientProfile = await storage.getClientProfileByUserId(req.user.userId);
+        await storage.createClientContact({
+          userId: req.user.userId,
+          phoneNumber: recipient,
+          firstname: null,
+          lastname: null,
+          business: clientProfile?.businessName || null,
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Initial send error:', error.response?.data || error.message);
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
+  // Client: reply (map usemodem/port from inbound)
+  app.post('/api/web/inbox/reply', authenticateToken, async (req: any, res) => {
+    try {
+      const { to, message, userId } = req.body || {};
+      if (!to || !message) return res.status(400).json({ error: 'to and message required' });
+      const effectiveUserId = req.user.role === 'admin' && userId ? userId : req.user.userId;
+
+      // Find last inbound for this conversation to get modem/port
+      const history = await storage.getConversationHistory(effectiveUserId, to);
+      const lastInbound = [...(history.incoming || [])].reverse().find(m => !!m.port || !!m.usedmodem) || (history.incoming || []).slice(-1)[0];
+      const usemodem = lastInbound?.usedmodem || null;
+      const port = lastInbound?.port || null;
+
+      const extremeApiKey = await storage.getSystemConfig('extreme_api_key');
+      if (!extremeApiKey?.value) return res.status(400).json({ error: 'ExtremeSMS API key not configured' });
+
+      const payload: any = { recipient: to, message };
+      if (usemodem) payload.usemodem = usemodem;
+      if (port) payload.port = port;
+
+      const response = await axios.post(`${EXTREMESMS_BASE_URL}/api/v2/sms/sendsingle`, payload, {
+        headers: {
+          'Authorization': `Bearer ${extremeApiKey.value}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      await storage.createMessageLog({
+        userId: effectiveUserId,
+        messageId: response.data?.messageId || `reply-${Date.now()}`,
+        endpoint: 'send-single',
+        recipient: to,
+        recipients: null,
+        senderPhoneNumber: lastInbound?.receiver || null,
+        status: 'sent',
+        costPerMessage: '0.0000',
+        chargePerMessage: '0.0000',
+        totalCost: '0.00',
+        totalCharge: '0.00',
+        messageCount: 1,
+        requestPayload: JSON.stringify(payload),
+        responsePayload: JSON.stringify(response.data || {}),
+        isExample: false,
+      } as any);
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Reply send error:', error.response?.data || error.message);
+      res.status(500).json({ error: 'Failed to send reply' });
+    }
+  });
+
+  // Admin: recent webhook events
+  app.get('/api/admin/webhook/events', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const limit = Number((req.query as any).limit || 50);
+      const events = await storage.getAllIncomingMessages(limit);
+      res.json({ success: true, events });
+    } catch (error) {
+      console.error('Webhook events fetch error:', error);
+      res.status(500).json({ success: false });
+    }
+  });
+
   // Test API endpoint (admin only - uses ExtremeSMS directly, NOT client keys)
   app.post("/api/admin/test-endpoint", authenticateToken, requireAdmin, async (req: any, res) => {
     try {

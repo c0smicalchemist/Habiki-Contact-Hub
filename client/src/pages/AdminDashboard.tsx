@@ -1087,6 +1087,7 @@ export default function AdminDashboard() {
                   <h4 className="font-semibold mb-2">Last Webhook Event</h4>
                   <p className="text-xs text-muted-foreground">At: {webhookStatusQuery.data?.lastEventAt || '—'}</p>
                   <p className="text-xs">Message ID: {webhookStatusQuery.data?.lastEvent?.messageId || '—'}</p>
+                  <p className="text-xs">Modem: {webhookStatusQuery.data?.lastEvent?.usedmodem || '—'} · Port: {webhookStatusQuery.data?.lastEvent?.port || '—'}</p>
                   <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">{JSON.stringify(webhookStatusQuery.data?.lastEvent || null, null, 2)}</pre>
                   <p className="text-xs mt-2">Routed User: {webhookStatusQuery.data?.lastRoutedUser || '—'}</p>
                 </div>
