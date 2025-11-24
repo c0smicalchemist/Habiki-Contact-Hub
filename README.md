@@ -1,6 +1,21 @@
 # 🚀 Habiki Contact Hub
 
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fc0smicalchemist%2FHabiki-Contact-Hub&referralCode=habiki)
+
 A comprehensive social media contact management system that enables bulk messaging, contact scraping, and multi-platform export capabilities.
+
+## 🚂 Quick Deploy to Railway
+
+**One-click deployment**: Click the button above to deploy Habiki Contact Hub to Railway instantly!
+
+**Features included:**
+- ✅ Automatic PostgreSQL database setup
+- ✅ Environment variable configuration
+- ✅ SSL/HTTPS enabled
+- ✅ Auto-scaling and monitoring
+- ✅ Zero-downtime deployments
+
+**Or manual deploy**: See [Railway Deployment Guide](RAILWAY_DEPLOYMENT_GUIDE.md)
 
 ## ✨ Features
 
