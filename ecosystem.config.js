@@ -2,6 +2,7 @@ module.exports = {
   apps: [{
     name: 'ibiki-sms',
     script: 'dist/index.js',
+    cwd: '/opt/ibiki-sms',
     instances: 1,
     autorestart: true,
     watch: false,
