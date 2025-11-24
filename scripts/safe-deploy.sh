@@ -49,6 +49,13 @@ if [ -z "$DATABASE_URL" ]; then
     export DATABASE_URL=$(grep DATABASE_URL .env.production | cut -d '=' -f2-)
 fi
 
+# Deduplicate and normalize DATABASE_URL entry
+if grep -q '^DATABASE_URL=' .env.production; then
+  # Remove duplicates and keep the last value
+  tac .env.production | awk '!seen[$0]++' | tac > .env.production.tmp && mv .env.production.tmp .env.production
+fi
+echo "DATABASE_URL set to: $(grep '^DATABASE_URL=' .env.production | cut -d '=' -f2-)"
+
 # 7. Run migrations and restart
 echo "7. Running migrations and restarting..."
 RUN_DB_MIGRATIONS=true pm2 restart ibiki-sms --update-env

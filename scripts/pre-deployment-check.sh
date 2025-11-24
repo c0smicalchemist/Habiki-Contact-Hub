@@ -11,6 +11,9 @@ pm2 status ibiki-sms
 echo "2. Database Status:"
 export DATABASE_URL=$(grep DATABASE_URL .env.production | cut -d '=' -f2-)
 psql "$DATABASE_URL" -c "SELECT email, role, is_active FROM users ORDER BY email;"
+echo "2.1 Environment variables potentially conflicting:"
+printenv | grep -E 'DATABASE_URL|POSTGRES_URL|POSTGRESQL_URL|DATABASE_PRIVATE_URL|DATABASE_PUBLIC_URL' || true
+echo "DATABASE_URL from file: $(grep '^DATABASE_URL=' .env.production | cut -d '=' -f2-)"
 
 # 3. Backup status
 echo "3. Backup Status:"
@@ -27,4 +30,3 @@ git log --oneline -5
 
 echo "=== Safety Check Complete ==="
 echo "If all above looks good, run: /opt/ibiki-sms/safe-deploy.sh"
-
