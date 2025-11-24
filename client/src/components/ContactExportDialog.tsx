@@ -204,18 +204,33 @@ export default function ContactExportDialog({
   };
 
   const copyPreviewToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(generatePreview());
-      toast({
-        title: 'Copied',
-        description: 'Preview copied to clipboard'
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to copy to clipboard',
-        variant: 'destructive'
-      });
+    const text = generatePreview();
+    const copyText = async (t: string) => {
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          await navigator.clipboard.writeText(t);
+          return true;
+        }
+      } catch {}
+      const textarea = document.createElement('textarea');
+      textarea.value = t;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      let success = false;
+      try {
+        success = document.execCommand('copy');
+      } catch {}
+      document.body.removeChild(textarea);
+      return success;
+    };
+    const ok = await copyText(text);
+    if (ok) {
+      toast({ title: 'Copied', description: 'Preview copied to clipboard' });
+    } else {
+      toast({ title: 'Error', description: 'Failed to copy to clipboard', variant: 'destructive' });
     }
   };
 

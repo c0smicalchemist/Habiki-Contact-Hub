@@ -904,10 +904,31 @@ export default function AdminDashboard() {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => {
+                        onClick={async () => {
                           const val = secretsStatusQuery.data?.suggestedWebhook || '';
-                          navigator.clipboard.writeText(val);
-                          toast({ title: "Copied!", description: "Webhook URL copied to clipboard" });
+                          const copyText = async (text: string) => {
+                            try {
+                              if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                                await navigator.clipboard.writeText(text);
+                                return true;
+                              }
+                            } catch {}
+                            const textarea = document.createElement('textarea');
+                            textarea.value = text;
+                            textarea.style.position = 'fixed';
+                            textarea.style.opacity = '0';
+                            document.body.appendChild(textarea);
+                            textarea.focus();
+                            textarea.select();
+                            let success = false;
+                            try {
+                              success = document.execCommand('copy');
+                            } catch {}
+                            document.body.removeChild(textarea);
+                            return success;
+                          };
+                          const ok = await copyText(val);
+                          toast({ title: ok ? "Copied!" : "Copy failed", description: ok ? "Webhook URL copied to clipboard" : "Unable to copy to clipboard", variant: ok ? undefined : 'destructive' });
                         }}
                         data-testid="button-copy-webhook"
                       >
