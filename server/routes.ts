@@ -956,6 +956,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get message logs for a specific client
+  app.get("/api/admin/messages", authenticateToken, requireAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.query as { userId?: string };
+      if (!userId) return res.status(400).json({ error: "userId is required" });
+      const limit = await resolveFetchLimit(userId, 'client', req.query.limit as string | undefined);
+      const logs = await storage.getMessageLogsByUserId(userId, limit);
+      res.json({ success: true, messages: logs, count: logs.length, limit });
+    } catch (error) {
+      console.error("Admin message logs fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch messages for client" });
+    }
+  });
+
   // Get incoming messages for dashboard (JWT auth)
   app.get("/api/client/inbox", authenticateToken, async (req: any, res) => {
     try {
