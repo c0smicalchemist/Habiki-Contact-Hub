@@ -326,7 +326,7 @@ export default function AdminDashboard() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return await apiRequest(`/api/admin/users/${userId}/delete`, { method: 'POST' });
+      return await apiRequest(`/api/v2/account/${userId}`, { method: 'DELETE' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/clients'] });
@@ -657,13 +657,14 @@ export default function AdminDashboard() {
                             size="sm"
                             variant="destructive"
                             onClick={() => {
-                              if (confirm(`Delete user ${client.name}? This will disable the account, revoke keys, and clear contacts.`)) {
+                              const msg = 'This action will totally remove the user profile from Ibiki, this action is irreversible.\n\nProceed to PURGE this user?';
+                              if (confirm(msg)) {
                                 deleteUserMutation.mutate(client.id);
                               }
                             }}
-                            data-testid={`button-delete-${client.id}`}
+                            data-testid={`button-purge-${client.id}`}
                           >
-                            Delete
+                            Purge
                           </Button>
                         </div>
                       </TableCell>

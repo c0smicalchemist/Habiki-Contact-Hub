@@ -132,6 +132,10 @@ export interface IStorage {
   seedExampleData(userId: string): Promise<void>; // Add example data for new users
   deleteExampleData(userId: string): Promise<void>;
   hasExampleData(userId: string): Promise<boolean>;
+  
+  // Admin account lifecycle
+  disableUser(userId: string): Promise<void>;
+  deleteUser(userId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -157,6 +161,37 @@ export class MemStorage implements IStorage {
     this.clientContacts = new Map();
     this.contactGroups = new Map();
     this.contacts = new Map();
+  }
+
+  async disableUser(userId: string): Promise<void> {
+    const u = this.users.get(userId);
+    if (u) this.users.set(userId, { ...u, isActive: false });
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    this.users.delete(userId);
+    // Remove associated data
+    for (const [id, k] of this.apiKeys) if (k.userId === userId) this.apiKeys.delete(id);
+    for (const [id, p] of this.clientProfiles) if (p.userId === userId) this.clientProfiles.delete(id);
+    for (const [id, c] of this.clientContacts) if (c.userId === userId) this.clientContacts.delete(id);
+    for (const [id, g] of this.contactGroups) if (g.userId === userId) this.contactGroups.delete(id);
+    for (const [id, c] of this.contacts) if (c.userId === userId) this.contacts.delete(id);
+    for (const [id, m] of this.messageLogs) if (m.userId === userId) this.messageLogs.delete(id);
+    for (const [id, t] of this.creditTransactions) if (t.userId === userId) this.creditTransactions.delete(id);
+    for (const [id, i] of this.incomingMessages) if (i.userId === userId) this.incomingMessages.delete(id);
+  }
+
+  async deleteExampleData(userId: string): Promise<void> {
+    for (const [id, i] of this.incomingMessages) if (i.userId === userId && i.isExample) this.incomingMessages.delete(id);
+    for (const [id, m] of this.messageLogs) if (m.userId === userId && m.isExample) this.messageLogs.delete(id);
+    for (const [id, c] of this.contacts) if (c.userId === userId && c.isExample) this.contacts.delete(id);
+  }
+
+  async hasExampleData(userId: string): Promise<boolean> {
+    for (const i of this.incomingMessages.values()) if (i.userId === userId && i.isExample) return true;
+    for (const m of this.messageLogs.values()) if (m.userId === userId && m.isExample) return true;
+    for (const c of this.contacts.values()) if (c.userId === userId && c.isExample) return true;
+    return false;
   }
 
   // User methods
@@ -552,6 +587,32 @@ export class MemStorage implements IStorage {
       isRead: false,
       isExample: true
     });
+  }
+
+  async deleteExampleData(userId: string): Promise<void> {
+    await this.db.delete(incomingMessages).where(sql`${incomingMessages.userId} = ${userId} AND ${incomingMessages.isExample} = true`);
+    await this.db.delete(messageLogs).where(sql`${messageLogs.userId} = ${userId} AND ${messageLogs.isExample} = true`);
+    await this.db.delete(contacts).where(sql`${contacts.userId} = ${userId} AND ${contacts.isExample} = true`);
+  }
+
+  async hasExampleData(userId: string): Promise<boolean> {
+    const inc = await this.db.select().from(incomingMessages).where(sql`${incomingMessages.userId} = ${userId} AND ${incomingMessages.isExample} = true`).limit(1);
+    const logs = await this.db.select().from(messageLogs).where(sql`${messageLogs.userId} = ${userId} AND ${messageLogs.isExample} = true`).limit(1);
+    const cnt = await this.db.select().from(contacts).where(sql`${contacts.userId} = ${userId} AND ${contacts.isExample} = true`).limit(1);
+    return inc.length > 0 || logs.length > 0 || cnt.length > 0;
+  }
+
+  async disableUser(userId: string): Promise<void> {
+    await this.db.update(users).set({ isActive: false }).where(eq(users.id, userId));
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    // Delete non-cascade tables first
+    await this.db.delete(incomingMessages).where(eq(incomingMessages.userId, userId));
+    await this.db.delete(messageLogs).where(eq(messageLogs.userId, userId));
+    await this.db.delete(creditTransactions).where(eq(creditTransactions.userId, userId));
+    // Cascade will remove api_keys, client_profiles, client_contacts, contact_groups, contacts
+    await this.db.delete(users).where(eq(users.id, userId));
   }
 
   async hasExampleData(userId: string): Promise<boolean> {
