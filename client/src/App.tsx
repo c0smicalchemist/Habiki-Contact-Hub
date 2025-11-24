@@ -20,6 +20,9 @@ import Contacts from "@/pages/Contacts";
 import SendSMS from "@/pages/SendSMS";
 import Inbox from "@/pages/Inbox";
 import MessageHistory from "@/pages/MessageHistory";
+import SocialMediaHub from "@/pages/SocialMediaHub";
+import ContactScrapingDashboard from "@/pages/ContactScrapingDashboard";
+import ContactExportInterface from "@/components/ContactExportInterface";
 
 function ProtectedAdmin() {
   const [location, setLocation] = useLocation();
@@ -67,6 +70,9 @@ function Router() {
       <Route path="/send-sms" component={SendSMS} />
       <Route path="/inbox" component={Inbox} />
       <Route path="/message-history" component={MessageHistory} />
+      <Route path="/social-media" component={SocialMediaHub} />
+      <Route path="/contact-scraping" component={ContactScrapingDashboard} />
+      <Route path="/contact-export" component={ContactExportInterface} />
       <Route component={NotFound} />
     </Switch>
   );
