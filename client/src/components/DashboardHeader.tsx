@@ -75,16 +75,7 @@ export function DashboardHeader() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <LanguageToggle />
-          {location.startsWith('/inbox') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRetrieveInbox}
-              data-testid="button-retrieve-inbox"
-            >
-              {retrieving ? 'Retrieving…' : t('inbox.retrieveInbox')}
-            </Button>
-          )}
+          {/* Retrieve Inbox action moved into Inbox page header */}
           <Button
             variant="ghost"
             size="sm"

@@ -69,6 +69,7 @@ export default function SendSMS() {
   // Bulk SMS state
   const [bulkRecipients, setBulkRecipients] = useState("");
   const [bulkMessage, setBulkMessage] = useState("");
+  const [bulkCountry, setBulkCountry] = useState<string>('US');
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [bulkCsvFile, setBulkCsvFile] = useState<File | null>(null);
   const [bulkCsvNumbers, setBulkCsvNumbers] = useState<string[]>([]);
@@ -77,6 +78,7 @@ export default function SendSMS() {
   const [bulkMultiMessages, setBulkMultiMessages] = useState([
     { to: "", message: "" }
   ]);
+  const [multiCountry, setMultiCountry] = useState<string>('US');
 
   // Fetch current user profile
   const { data: profile } = useQuery<{
@@ -219,7 +221,7 @@ export default function SendSMS() {
       return;
     }
 
-    const defaultDial = countries.find(c => c.code === singleCountry)?.dial || '+1';
+    const defaultDial = countries.find(c => c.code === bulkCountry)?.dial || '+1';
     const normalizedRecipients = recipients.map(r => r.startsWith('+') ? r : `${defaultDial}${r.replace(/^\+/, '')}`);
     const payload: { recipients: string[]; message: string; userId?: string } = {
       recipients: normalizedRecipients,
@@ -237,7 +239,7 @@ export default function SendSMS() {
       toast({ title: t('common.error'), description: t('sendSms.error.provideMessage'), variant: "destructive" });
       return;
     }
-    const defaultDialMulti = countries.find(c => c.code === singleCountry)?.dial || '+1';
+    const defaultDialMulti = countries.find(c => c.code === multiCountry)?.dial || '+1';
     const normalizedMulti = validMessages.map(m => ({
       to: m.to.startsWith('+') ? m.to : `${defaultDialMulti}${m.to.replace(/^\+/, '')}`,
       message: m.message
@@ -403,6 +405,19 @@ export default function SendSMS() {
                     <TabsTrigger value="csv">CSV</TabsTrigger>
                   </TabsList>
                   <TabsContent value="manual" className="space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <Select value={bulkCountry} onValueChange={setBulkCountry}>
+                        <SelectTrigger className="w-40" data-testid="select-bulk-country">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map(c => (
+                            <SelectItem key={c.code} value={c.code}>{c.flag} {c.name} ({c.dial})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-xs text-muted-foreground">Country code applied to numbers without + prefix</span>
+                    </div>
                     <Textarea
                       value={bulkRecipients}
                       onChange={(e) => setBulkRecipients(e.target.value)}
@@ -508,6 +523,19 @@ export default function SendSMS() {
               <CardDescription>{t('sendSms.bulkMulti.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex gap-2 items-center mb-2">
+                <Select value={multiCountry} onValueChange={setMultiCountry}>
+                  <SelectTrigger className="w-40" data-testid="select-multi-country">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map(c => (
+                      <SelectItem key={c.code} value={c.code}>{c.flag} {c.name} ({c.dial})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground">Applied to recipients without + prefix</span>
+              </div>
               {bulkMultiMessages.map((msg, index) => (
                 <Card key={index}>
                   <CardContent className="pt-6 space-y-3">
