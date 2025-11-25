@@ -206,7 +206,7 @@ export function WorldClock() {
           ))}
         </div>
         <div className="mt-6 mb-2 text-xs font-bold text-center">
-          SMS campaign messages in the USA between 8 a.m. and 9 p.m. in the recipient's local time zone
+          {t('worldClock.disclaimer')}
         </div>
       </CardContent>
     </Card>

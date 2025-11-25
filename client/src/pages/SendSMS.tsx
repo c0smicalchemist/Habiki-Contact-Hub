@@ -416,7 +416,7 @@ export default function SendSMS() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <span className="text-xs text-muted-foreground">Country code applied to numbers without + prefix</span>
+                      <span className="text-xs text-muted-foreground">{t('sendSms.bulk.countryHint')}</span>
                     </div>
                     <Textarea
                       value={bulkRecipients}
@@ -534,7 +534,7 @@ export default function SendSMS() {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-xs text-muted-foreground">Applied to recipients without + prefix</span>
+                <span className="text-xs text-muted-foreground">{t('sendSms.bulkMulti.countryHint')}</span>
               </div>
               {bulkMultiMessages.map((msg, index) => (
                 <Card key={index}>
@@ -595,8 +595,8 @@ export default function SendSMS() {
         <TabsContent value="bulk-csv">
           <Card>
             <CardHeader>
-              <CardTitle>Bulk CSV</CardTitle>
-              <CardDescription>Upload a CSV of recipients and send a single message</CardDescription>
+              <CardTitle>{t('sendSms.bulkCsv.title')}</CardTitle>
+              <CardDescription>{t('sendSms.bulkCsv.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2 items-center">
@@ -613,7 +613,7 @@ export default function SendSMS() {
                 <span className="text-xs text-muted-foreground">Applied to recipients without + prefix</span>
               </div>
               <div>
-                <Label>CSV File</Label>
+                <Label>{t('sendSms.bulkCsv.file')}</Label>
                 <Input
                   type="file"
                   accept=".csv"
@@ -641,7 +641,7 @@ export default function SendSMS() {
                   }}
                   data-testid="input-bulk-csv-top"
                 />
-                <p className="text-sm text-muted-foreground mt-1">{bulkCsvNumbers.length} recipients from CSV</p>
+                <p className="text-sm text-muted-foreground mt-1">{bulkCsvNumbers.length} {t('sendSms.bulkCsv.recipientsFromCsv')}</p>
               </div>
               <div>
                 <Label htmlFor="bulk-csv-message">Message *</Label>

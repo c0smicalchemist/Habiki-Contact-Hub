@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ClientSelector } from "@/components/ClientSelector";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface MessageLog {
   id: string;
@@ -133,6 +134,8 @@ export default function MessageHistory() {
   });
 
   const messages = messagesData?.messages || [];
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkNumbers, setBulkNumbers] = useState<string[]>([]);
 
   // Safe JSON parse helper
   const safeJsonParse = (jsonString: string | null): any => {
@@ -314,6 +317,16 @@ export default function MessageHistory() {
                         <TableRow key={msg.id} data-testid={`row-message-${msg.id}`}>
                           <TableCell className="font-mono text-sm" data-testid={`recipient-${msg.id}`}>
                             {getRecipientDisplay(msg)}
+                            {msg.recipients && Array.isArray(msg.recipients) && msg.recipients.length > 0 && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="ml-2 bg-muted text-muted-foreground"
+                                onClick={() => { setBulkNumbers(msg.recipients || []); setBulkOpen(true); }}
+                              >
+                                {t('messageHistory.bulk')} ({msg.recipients.length})
+                              </Button>
+                            )}
                           </TableCell>
                           <TableCell className="max-w-[12rem] truncate">
                             <Badge variant="outline" className="max-w-[12rem] truncate">
@@ -391,6 +404,20 @@ export default function MessageHistory() {
             )}
           </CardContent>
         </Card>
+        <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('messageHistory.bulkRecipients')}</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-2">
+              {bulkNumbers.map((n, i) => (
+                <Badge key={`${n}-${i}`} variant="outline" className="justify-center font-mono">
+                  {n}
+                </Badge>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
