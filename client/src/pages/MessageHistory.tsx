@@ -221,9 +221,7 @@ export default function MessageHistory() {
   const getRecipientDisplay = (msg: MessageLog) => {
     if (msg.recipient) return msg.recipient;
     if (msg.recipients && msg.recipients.length > 0) {
-      return msg.recipients.length > 1 
-        ? `${msg.recipients[0]} +${msg.recipients.length - 1}` 
-        : msg.recipients[0];
+      return msg.recipients[0];
     }
     return 'N/A';
   };
@@ -319,9 +317,9 @@ export default function MessageHistory() {
                             {getRecipientDisplay(msg)}
                             {msg.recipients && Array.isArray(msg.recipients) && msg.recipients.length > 0 && (
                               <Button
-                                variant="secondary"
+                                variant="outline"
                                 size="sm"
-                                className="ml-2 bg-muted text-muted-foreground"
+                                className="ml-2 border-blue-500 text-blue-600 font-bold"
                                 onClick={() => { setBulkNumbers(msg.recipients || []); setBulkOpen(true); }}
                               >
                                 {t('messageHistory.bulk')} ({msg.recipients.length})
