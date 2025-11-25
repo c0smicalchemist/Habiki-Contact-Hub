@@ -3292,13 +3292,21 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
         ? userId 
         : req.user.userId;
 
-      const { extremeUsername, extremePassword } = await getExtremeSMSCredentials();
-      
-      const response = await axios.post('https://extremesms.net/api2/api/sms/send-single', {
-        username: extremeUsername,
-        password: extremePassword,
-        to,
-        message
+      // Map modem/port from the last inbound message for proper two-way routing
+      const history = await storage.getConversationHistory(targetUserId, to);
+      const lastInbound = [...(history.incoming || [])].reverse().find(m => !!m.port || !!m.usedmodem) || (history.incoming || []).slice(-1)[0];
+      const usemodem = lastInbound?.usedmodem || null;
+      const port = lastInbound?.port || null;
+
+      const extremeApiKey = await storage.getSystemConfig('extreme_api_key');
+      if (!extremeApiKey?.value) return res.status(400).json({ error: 'ExtremeSMS API key not configured' });
+
+      const payload: any = { recipient: to, message };
+      if (usemodem) payload.usemodem = usemodem;
+      if (port) payload.port = port;
+
+      const response = await axios.post('https://extremesms.net/api/v2/sms/sendsingle', payload, {
+        headers: { 'Authorization': `Bearer ${extremeApiKey.value}`, 'Content-Type': 'application/json' }
       });
 
       // Deduct credits and log using targetUserId
@@ -3306,9 +3314,9 @@ app.delete("/api/v2/account/:userId", authenticateToken, requireAdmin, async (re
         targetUserId,
         1,
         'web-ui-reply',
-        response.data.messageId || 'unknown',
+        response.data?.messageId || 'unknown',
         'sent',
-        { to, message },
+        payload,
         response.data,
         to
       );

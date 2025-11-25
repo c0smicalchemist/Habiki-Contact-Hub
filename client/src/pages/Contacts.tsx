@@ -29,6 +29,7 @@ interface Contact {
   lastExportedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  business?: string | null;
 }
 
 interface ContactGroup {
@@ -171,6 +172,7 @@ export default function Contacts() {
   // Create contact mutation
   const createContactMutation = useMutation({
     mutationFn: async (data: typeof contactData) => {
+      // auto-assign business from client profile
       const payload = effectiveUserId ? { ...data, userId: effectiveUserId } : data;
       return await apiRequest('/api/contacts', {
         method: 'POST',
@@ -405,7 +407,7 @@ export default function Contacts() {
                     data-testid="input-business-prefix"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Used for CSV export. Contacts will be numbered sequentially (e.g., IBS_1, IBS_2, IBS_3)
+                    Used for internal organization. CSV exports will use the client Business name from Admin.
                   </p>
                 </div>
               </div>
@@ -630,7 +632,12 @@ export default function Contacts() {
                   <Folder className="h-4 w-4 mr-2" />
                   <span className="flex-1 text-left">{group.name} ({contacts.filter((c: Contact) => c.groupId === group.id).length})</span>
                 </Button>
-                <div className="pl-6">
+                <div className="pl-6 flex justify-between items-center">
+                  {group.businessUnitPrefix && (
+                    <div className="text-xs text-muted-foreground">
+                      Business: {group.businessUnitPrefix}
+                    </div>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -645,11 +652,7 @@ export default function Contacts() {
                     Delete
                   </Button>
                 </div>
-                {group.businessUnitPrefix && (
-                  <div className="pl-6 text-xs text-muted-foreground">
-                    Business: {group.businessUnitPrefix}
-                  </div>
-                )}
+                
               </div>
             ))}
           </CardContent>
@@ -693,8 +696,8 @@ export default function Contacts() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {profile?.user?.company ? (
-                        <Badge variant="outline">{profile.user.company}</Badge>
+                      { (contact as any).business ? (
+                        <Badge variant="outline">{(contact as any).business}</Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground">-</span>
                       )}

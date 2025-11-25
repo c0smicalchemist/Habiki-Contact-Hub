@@ -50,6 +50,11 @@ export function ConversationDialog({ open, onClose, phoneNumber, userId, isAdmin
     enabled: open && !!phoneNumber,
   });
 
+  const lastInbound = (() => {
+    const inc = conversationData?.conversation?.incoming || [];
+    return inc.length ? inc[inc.length - 1] : null;
+  })();
+
   // Mark conversation as read when opening
   const markReadMutation = useMutation({
     mutationFn: async () => {
@@ -152,6 +157,16 @@ export function ConversationDialog({ open, onClose, phoneNumber, userId, isAdmin
             <p className="text-sm text-muted-foreground" data-testid="text-conversation-phone">
               {phoneNumber}
             </p>
+            {lastInbound?.usedmodem || lastInbound?.port ? (
+              <div className="mt-1 flex items-center gap-2">
+                {lastInbound?.usedmodem && (
+                  <Badge variant="secondary" className="text-xs" data-testid="badge-modem">modem: {String(lastInbound.usedmodem)}</Badge>
+                )}
+                {lastInbound?.port && (
+                  <Badge variant="secondary" className="text-xs" data-testid="badge-port">port: {String(lastInbound.port)}</Badge>
+                )}
+              </div>
+            ) : null}
           </div>
           <Button
             size="icon"

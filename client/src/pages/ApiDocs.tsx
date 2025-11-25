@@ -5,15 +5,18 @@ import { WebhookRoutingDocs } from "@/components/WebhookRoutingDocs";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ApiDocs() {
   const { t } = useLanguage();
+  const { data: profile } = useQuery<{ user: { role: string } }>({ queryKey: ['/api/client/profile'] });
+  const isAdmin = profile?.user?.role === 'admin';
   const endpoints = [
     {
       method: "POST" as const,
       path: "/api/v2/sms/sendsingle",
-      title: t('docs.sendSingle.title'),
-      description: t('docs.sendSingle.description'),
+      title: 'Send Single',
+      description: 'Send a single SMS to one recipient',
       requestExample: `curl -X POST http://151.243.109.79/api/v2/sms/sendsingle \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -27,8 +30,8 @@ export default function ApiDocs() {
     {
       method: "POST" as const,
       path: "/api/v2/sms/sendbulk",
-      title: t('docs.sendBulk.title'),
-      description: t('docs.sendBulk.description'),
+      title: 'Send Bulk',
+      description: 'Send a single SMS to multiple recipients',
       requestExample: `curl -X POST http://151.243.109.79/api/v2/sms/sendbulk \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -46,8 +49,8 @@ export default function ApiDocs() {
     {
       method: "POST" as const,
       path: "/api/v2/sms/sendbulkmulti",
-      title: t('docs.sendBulkMulti.title'),
-      description: t('docs.sendBulkMulti.description'),
+      title: 'Send Bulk Multi',
+      description: 'Send multiple messages to different recipients in one request',
       requestExample: `curl -X POST http://151.243.109.79/api/v2/sms/sendbulkmulti \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -93,8 +96,8 @@ export default function ApiDocs() {
     {
       method: "GET" as const,
       path: "/api/v2/sms/status/{messageId}",
-      title: t('docs.checkDelivery.title'),
-      description: t('docs.checkDelivery.description'),
+      title: 'Check Delivery',
+      description: 'Get the delivery status for a specific messageId',
       requestExample: `curl -X GET http://151.243.109.79/api/v2/sms/status/60f1a5b3e6e7c12345678901 \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       responseExample: `{
@@ -107,8 +110,8 @@ export default function ApiDocs() {
     {
       method: "GET" as const,
       path: "/api/v2/account/balance",
-      title: t('docs.checkBalance.title'),
-      description: t('docs.checkBalance.description'),
+      title: 'Check Balance',
+      description: 'Get your current credits balance',
       requestExample: `curl -X GET http://151.243.109.79/api/v2/account/balance \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       responseExample: `{
@@ -120,8 +123,8 @@ export default function ApiDocs() {
     {
       method: "GET" as const,
       path: "/api/v2/sms/inbox",
-      title: t('docs.inbox.title'),
-      description: t('docs.inbox.description'),
+      title: 'Inbox',
+      description: 'Retrieve recent inbound messages to your account',
       requestExample: `curl -X GET http://151.243.109.79/api/v2/sms/inbox?limit=50 \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       responseExample: `{
@@ -198,9 +201,24 @@ export default function ApiDocs() {
         ))}
       </div>
 
-      <div className="mt-12">
-        <WebhookRoutingDocs />
-      </div>
+      {isAdmin ? (
+        <div className="mt-12">
+          <WebhookRoutingDocs />
+        </div>
+      ) : (
+        <div className="mt-12">
+          <h2 className="text-2xl font-semibold">API Error Codes</h2>
+          <div className="mt-4 grid gap-2">
+            <code className="block bg-muted p-2 rounded text-sm">200 — OK</code>
+            <code className="block bg-muted p-2 rounded text-sm">400 — Bad Request</code>
+            <code className="block bg-muted p-2 rounded text-sm">401 — Unauthorized</code>
+            <code className="block bg-muted p-2 rounded text-sm">402 — Payment Required</code>
+            <code className="block bg-muted p-2 rounded text-sm">404 — Not Found</code>
+            <code className="block bg-muted p-2 rounded text-sm">429 — Too Many Requests</code>
+            <code className="block bg-muted p-2 rounded text-sm">500 — Internal Server Error</code>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

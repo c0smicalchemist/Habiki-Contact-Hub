@@ -57,6 +57,14 @@ export default function SendSMS() {
   // Single SMS state
   const [singleTo, setSingleTo] = useState("");
   const [singleMessage, setSingleMessage] = useState("");
+  const countries = [
+    { code: 'US', name: 'USA', dial: '+1', flag: '🇺🇸' },
+    { code: 'CA', name: 'Canada', dial: '+1', flag: '🇨🇦' },
+    { code: 'GB', name: 'UK', dial: '+44', flag: '🇬🇧' },
+    { code: 'AU', name: 'Australia', dial: '+61', flag: '🇦🇺' },
+    { code: 'NZ', name: 'New Zealand', dial: '+64', flag: '🇳🇿' },
+  ];
+  const [singleCountry, setSingleCountry] = useState<string>('US');
 
   // Bulk SMS state
   const [bulkRecipients, setBulkRecipients] = useState("");
@@ -176,8 +184,10 @@ export default function SendSMS() {
       toast({ title: t('common.error'), description: t('sendSms.error.fillFields'), variant: "destructive" });
       return;
     }
+    const dial = countries.find(c => c.code === singleCountry)?.dial || '';
+    const normalizedTo = singleTo.startsWith('+') ? singleTo : `${dial}${singleTo.replace(/^\+/, '')}`;
     const payload: { to: string; message: string; userId?: string } = {
-      to: singleTo,
+      to: normalizedTo,
       message: singleMessage
     };
     if (effectiveUserId) {
@@ -209,8 +219,12 @@ export default function SendSMS() {
       return;
     }
 
+    const defaultDial = countries.find(c => c.code === singleCountry)?.dial || '+1';
+    const normalizedRecipients = recipients.map(r => r.startsWith('+') ? r : `${defaultDial}${r.replace(/^\+/, '')}`);
+    const defaultDial = countries.find(c => c.code === singleCountry)?.dial || '+1';
+    const normalizedRecipients = recipients.map(r => r.startsWith('+') ? r : `${defaultDial}${r.replace(/^\+/, '')}`);
     const payload: { recipients: string[]; message: string; userId?: string } = {
-      recipients,
+      recipients: normalizedRecipients,
       message: bulkMessage
     };
     if (effectiveUserId) {
@@ -225,8 +239,18 @@ export default function SendSMS() {
       toast({ title: t('common.error'), description: t('sendSms.error.provideMessage'), variant: "destructive" });
       return;
     }
+    const defaultDialMulti = countries.find(c => c.code === singleCountry)?.dial || '+1';
+    const normalizedMulti = validMessages.map(m => ({
+      to: m.to.startsWith('+') ? m.to : `${defaultDialMulti}${m.to.replace(/^\+/, '')}`,
+      message: m.message
+    }));
+    const defaultDialMulti = countries.find(c => c.code === singleCountry)?.dial || '+1';
+    const normalizedMulti = validMessages.map(m => ({
+      to: m.to.startsWith('+') ? m.to : `${defaultDialMulti}${m.to.replace(/^\+/, '')}`,
+      message: m.message
+    }));
     const payload: { messages: Array<{ to: string; message: string }>; userId?: string } = {
-      messages: validMessages
+      messages: normalizedMulti
     };
     if (effectiveUserId) {
       payload.userId = effectiveUserId;
@@ -311,13 +335,36 @@ export default function SendSMS() {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="single-to">{t('sendSms.single.to')} *</Label>
-                <Input
-                  id="single-to"
-                  value={singleTo}
-                  onChange={(e) => setSingleTo(e.target.value)}
-                  placeholder="+1234567890"
-                  data-testid="input-single-to"
-                />
+                <div className="flex gap-2">
+                  <Select value={singleCountry} onValueChange={(val) => {
+                    setSingleCountry(val);
+                    if (singleTo && !/^\+/.test(singleTo)) {
+                      const d = countries.find(c => c.code === val)?.dial || '';
+                      setSingleTo(`${d}${singleTo}`);
+                    }
+                  }}>
+                    <SelectTrigger className="w-40" data-testid="select-single-country">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map(c => (
+                        <SelectItem key={c.code} value={c.code}>{c.flag} {c.name} ({c.dial})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="single-to"
+                    value={singleTo}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setSingleTo(v);
+                      const match = countries.find(c => v.startsWith(c.dial));
+                      if (match) setSingleCountry(match.code);
+                    }}
+                    placeholder="+1234567890"
+                    data-testid="input-single-to"
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="single-message">{t('sendSms.single.message')} *</Label>
