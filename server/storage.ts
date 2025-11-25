@@ -335,6 +335,13 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getClientProfileByBusinessName(businessName: string): Promise<ClientProfile | undefined> {
+    const target = businessName.trim().toLowerCase();
+    return Array.from(this.clientProfiles.values()).find(
+      (profile) => (profile.businessName || '').trim().toLowerCase() === target,
+    );
+  }
+
   async createClientProfile(insertProfile: InsertClientProfile): Promise<ClientProfile> {
     const id = randomUUID();
     const profile: ClientProfile = {
@@ -1019,6 +1026,14 @@ export class DbStorage implements IStorage {
   async getClientProfileByPhoneNumber(phoneNumber: string): Promise<ClientProfile | undefined> {
     const result = await this.db.select().from(clientProfiles)
       .where(sql`${phoneNumber} = ANY(${clientProfiles.assignedPhoneNumbers})`);
+    return result[0];
+  }
+
+  async getClientProfileByBusinessName(businessName: string): Promise<ClientProfile | undefined> {
+    const target = businessName.trim();
+    const result = await this.db.select().from(clientProfiles)
+      .where(sql`LOWER(${clientProfiles.businessName}) = LOWER(${target})`)
+      .limit(1);
     return result[0];
   }
 

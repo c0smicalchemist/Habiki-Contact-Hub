@@ -1507,34 +1507,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messageId = p.messageId || p.id || `ext-${Date.now()}`;
       const tsRaw = p.timestamp || p.time || Date.now();
       const timestamp = new Date(typeof tsRaw === 'string' ? tsRaw : Number(tsRaw));
+      const business = p.business || null;
 
       if (!from || !receiver || !message) {
         return res.status(400).json({ success: false, error: 'Invalid webhook payload' });
       }
 
       // Route to user: 1) recent outbound to this recipient, 2) assigned number owner
-      let userId: string | undefined = await storage.findClientByRecipient(from);
+      let userId: string | undefined = undefined;
+      // Primary: business name routing
+      if (business && String(business).trim() !== '') {
+        const profileByBiz = await storage.getClientProfileByBusinessName(String(business));
+        userId = profileByBiz?.userId;
+      }
+      // Secondary: conversation-based routing
+      if (!userId) {
+        userId = await storage.findClientByRecipient(from);
+      }
+      // Tertiary: assigned number routing
       if (!userId) {
         const profile = await storage.getClientProfileByPhoneNumber(receiver);
         userId = profile?.userId;
       }
 
-      const created = await storage.createIncomingMessage({
-        userId,
-        from,
-        firstname: null,
-        lastname: null,
-        business: null,
-        message,
-        status: 'received',
-        matchedBlockWord: null,
-        receiver,
-        usedmodem,
-        port,
-        timestamp,
-        messageId,
-        extPayload: req.body ? req.body : null,
-      } as any);
+      let created;
+      try {
+        created = await storage.createIncomingMessage({
+          userId,
+          from,
+          firstname: null,
+          lastname: null,
+          business,
+          message,
+          status: 'received',
+          matchedBlockWord: null,
+          receiver,
+          usedmodem,
+          port,
+          timestamp,
+          messageId,
+          extPayload: req.body ? req.body : null,
+        } as any);
+      } catch (err: any) {
+        // Retry without extPayload if column missing
+        created = await storage.createIncomingMessage({
+          userId,
+          from,
+          firstname: null,
+          lastname: null,
+          business,
+          message,
+          status: 'received',
+          matchedBlockWord: null,
+          receiver,
+          usedmodem,
+          port,
+          timestamp,
+          messageId,
+        } as any);
+      }
 
       // Persist last webhook diagnostics
       await storage.setSystemConfig('last_webhook_event', JSON.stringify({ from, receiver, message, usedmodem, port }));
@@ -1551,7 +1582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             phoneNumber: from,
             firstname: null,
             lastname: null,
-            business: clientProfile?.businessName || null,
+            business: clientProfile?.businessName || business || null,
           });
         }
       }
