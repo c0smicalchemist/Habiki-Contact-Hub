@@ -1313,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update system configuration
   app.post("/api/admin/config", authenticateToken, requireAdmin, async (req, res) => {
     try {
-      const { extremeApiKey, extremeCost, clientRate, timezone, defaultAdminMessagesLimit, defaultClientMessagesLimit, messagesLimitForUser, messagesLimitUserId } = req.body;
+      const { extremeApiKey, extremeCost, clientRate, timezone, defaultAdminMessagesLimit, defaultClientMessagesLimit, messagesLimitForUser, messagesLimitUserId, adminDefaultBusinessId } = req.body;
 
       if (extremeApiKey) {
         await storage.setSystemConfig("extreme_api_key", extremeApiKey);
@@ -1336,6 +1336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (messagesLimitForUser && messagesLimitUserId) {
         await storage.setSystemConfig(`messages_limit_user_${messagesLimitUserId}`, String(messagesLimitForUser));
       }
+      if (adminDefaultBusinessId) {
+        await storage.setSystemConfig('admin_default_business_id', String(adminDefaultBusinessId));
+      }
 
       res.json({ success: true, message: "Configuration updated" });
     } catch (error) {
@@ -1343,6 +1346,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to update configuration" });
     }
   });
+
+  async function getAdminDefaultBusinessId() {
+    const cfg = await storage.getSystemConfig('admin_default_business_id');
+    return cfg?.value || 'IBS_0';
+  }
 
   // Get ExtremeSMS account balance
   app.get("/api/admin/extremesms-balance", authenticateToken, requireAdmin, async (req, res) => {
@@ -1483,10 +1491,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Reuse routing logic
       let assignedUserId: string | null = null;
-      if (business && String(business).trim() !== '') {
-        const potentialUserId = String(business).trim();
-        const user = await storage.getUser(potentialUserId);
-        if (user && user.role === 'client') assignedUserId = user.id;
+      const bizName = (business && String(business).trim() !== '') ? String(business).trim() : await getAdminDefaultBusinessId();
+      if (bizName) {
+        const profileByBiz = await storage.getClientProfileByBusinessName(bizName);
+        if (profileByBiz?.userId) assignedUserId = profileByBiz.userId;
       }
       if (!assignedUserId) {
         const clientFromOutbound = await storage.findClientByRecipient(from);
@@ -1521,6 +1529,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Webhook test error:', error);
       res.status(500).json({ success: false, error: 'Failed to simulate webhook' });
+    }
+  });
+
+  // Admin: Repair missing user_id on incoming messages using business mapping
+  app.post('/api/admin/webhook/repair', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const { limit } = req.body || {};
+      const n = typeof limit === 'number' && limit > 0 ? Math.min(limit, 5000) : 500;
+      const missing = await storage.getIncomingMessagesWithMissingUserId(n);
+      let repaired = 0;
+      for (const msg of missing) {
+        const biz = msg.business || null;
+        if (!biz) continue;
+        const profileByBiz = await storage.getClientProfileByBusinessName(String(biz));
+        if (profileByBiz?.userId) {
+          await storage.updateIncomingMessageUserId(msg.id, profileByBiz.userId);
+          repaired++;
+        }
+      }
+      res.json({ success: true, repaired, scanned: missing.length });
+    } catch (error) {
+      console.error('Webhook repair error:', error);
+      res.status(500).json({ success: false, error: 'Failed to repair messages' });
     }
   });
 

@@ -54,9 +54,7 @@ export default function AdminDashboard() {
     { value: "Pacific/Honolulu", label: "Hawaii-Aleutian Time - Honolulu (no DST)" },
   ];
 
-  const { data: config } = useQuery<{ success: boolean; config: Record<string, string> }>({
-    queryKey: ['/api/admin/config']
-  });
+  const { data: config } = useQuery<{ success: boolean; config: Record<string, string> }>({ queryKey: ['/api/admin/config'] });
 
   useEffect(() => {
     if (config?.config) {
@@ -64,11 +62,12 @@ export default function AdminDashboard() {
       setExtremeCost(config.config.extreme_cost_per_sms || "0.01");
       setClientRate(config.config.client_rate_per_sms || "0.02");
       setTimezone(config.config.timezone || "America/New_York");
+      setWebhookBusiness(config.config.admin_default_business_id || 'IBS_0');
     }
   }, [config]);
 
   const saveConfigMutation = useMutation({
-    mutationFn: async (data: { extremeApiKey?: string; extremeCost?: string; clientRate?: string; timezone?: string }) => {
+    mutationFn: async (data: { extremeApiKey?: string; extremeCost?: string; clientRate?: string; timezone?: string; adminDefaultBusinessId?: string }) => {
       return await apiRequest('/api/admin/config', {
         method: 'POST',
         body: JSON.stringify(data)
@@ -379,7 +378,8 @@ export default function AdminDashboard() {
       extremeApiKey,
       extremeCost,
       clientRate,
-      timezone
+      timezone,
+      adminDefaultBusinessId: webhookBusiness || 'IBS_0'
     });
   };
 
@@ -961,11 +961,23 @@ export default function AdminDashboard() {
                           className="font-mono text-sm"
                         />
                       </div>
+                      <div>
+                        <Label>Admin Business ID</Label>
+                        <Input
+                          value={webhookBusiness}
+                          onChange={(e) => setWebhookBusiness(e.target.value)}
+                          placeholder="IBS_0"
+                          className="font-mono text-sm"
+                        />
+                      </div>
                       <div className="flex items-end">
                         <Button variant="outline" onClick={() => {
                           const val = secretsStatusQuery.data?.suggestedWebhook || '';
                           if (val) setWebhookUrlMutation.mutate(val);
                         }}>{t('admin.webhook.setToSuggested')}</Button>
+                      </div>
+                      <div className="flex items-end">
+                        <Button onClick={handleSaveConfig} disabled={saveConfigMutation.isPending}>Save Admin Business ID</Button>
                       </div>
                     </div>
                   </div>

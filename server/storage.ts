@@ -1233,6 +1233,20 @@ export class DbStorage implements IStorage {
       );
   }
 
+  async getIncomingMessagesWithMissingUserId(limit: number): Promise<IncomingMessage[]> {
+    let query = this.db.select().from(incomingMessages)
+      .where(sql`${incomingMessages.userId} IS NULL AND ${incomingMessages.business} IS NOT NULL`)
+      .orderBy(desc(incomingMessages.createdAt));
+    if (limit) query = query.limit(limit) as any;
+    return query;
+  }
+
+  async updateIncomingMessageUserId(id: string, userId: string): Promise<void> {
+    await this.db.update(incomingMessages)
+      .set({ userId })
+      .where(eq(incomingMessages.id, id));
+  }
+
   async getConversationHistory(userId: string, phoneNumber: string): Promise<{ incoming: IncomingMessage[]; outgoing: MessageLog[] }> {
     const incoming = await this.db.select()
       .from(incomingMessages)
