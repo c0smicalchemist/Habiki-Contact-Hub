@@ -1590,6 +1590,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const profile = await storage.getClientProfileByPhoneNumber(receiver);
         userId = profile?.userId;
       }
+      // Final fallback: admin default business ID
+      if (!userId) {
+        const fallbackBiz = await getAdminDefaultBusinessId();
+        const fallbackProfile = await storage.getClientProfileByBusinessName(fallbackBiz);
+        userId = fallbackProfile?.userId;
+      }
 
       let created;
       try {
@@ -1685,6 +1691,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId && looksLikePhone(receiver)) {
         const profile = await storage.getClientProfileByPhoneNumber(receiver);
         userId = profile?.userId;
+      }
+      if (!userId) {
+        const fallbackBiz = await getAdminDefaultBusinessId();
+        const fallbackProfile = await storage.getClientProfileByBusinessName(fallbackBiz);
+        userId = fallbackProfile?.userId;
       }
 
       let created;
