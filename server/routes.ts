@@ -1567,7 +1567,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messageId = p.messageId || p.id || `ext-${Date.now()}`;
       const tsRaw = p.timestamp || p.time || Date.now();
       const timestamp = new Date(typeof tsRaw === 'string' ? tsRaw : Number(tsRaw));
-      const business = p.business || null;
+      const looksLikePhone = (v: any) => typeof v === 'string' && /\+?\d{6,}/.test(v);
+      const business = p.business || (!looksLikePhone(p.to) ? p.to : null) || (!looksLikePhone(p.receiver) ? p.receiver : null) || null;
 
       if (!from || !receiver || !message) {
         return res.status(400).json({ success: false, error: 'Invalid webhook payload' });
@@ -1585,7 +1586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = await storage.findClientByRecipient(from);
       }
       // Tertiary: assigned number routing
-      if (!userId) {
+      if (!userId && looksLikePhone(receiver)) {
         const profile = await storage.getClientProfileByPhoneNumber(receiver);
         userId = profile?.userId;
       }
@@ -1628,7 +1629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Persist last webhook diagnostics
-      await storage.setSystemConfig('last_webhook_event', JSON.stringify({ from, receiver, message, usedmodem, port }));
+      await storage.setSystemConfig('last_webhook_event', JSON.stringify({ from, business, receiver, message, usedmodem, port }));
       await storage.setSystemConfig('last_webhook_event_at', new Date().toISOString());
       await storage.setSystemConfig('last_webhook_routed_user', created.userId || 'unassigned');
 
@@ -1666,7 +1667,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messageId = p.messageId || p.id || `ext-${Date.now()}`;
       const tsRaw = p.timestamp || p.time || Date.now();
       const timestamp = new Date(typeof tsRaw === 'string' ? tsRaw : Number(tsRaw));
-      const business = p.business || null;
+      const looksLikePhone = (v: any) => typeof v === 'string' && /\+?\d{6,}/.test(v);
+      const business = p.business || (!looksLikePhone(p.to) ? p.to : null) || (!looksLikePhone(p.receiver) ? p.receiver : null) || null;
 
       if (!from || !receiver || !message) {
         return res.status(400).json({ success: false, error: 'Invalid webhook payload' });
@@ -1680,7 +1682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         userId = await storage.findClientByRecipient(from);
       }
-      if (!userId) {
+      if (!userId && looksLikePhone(receiver)) {
         const profile = await storage.getClientProfileByPhoneNumber(receiver);
         userId = profile?.userId;
       }
@@ -1721,7 +1723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } as any);
       }
 
-      await storage.setSystemConfig('last_webhook_event', JSON.stringify({ from, receiver, message, usedmodem, port }));
+      await storage.setSystemConfig('last_webhook_event', JSON.stringify({ from, business, receiver, message, usedmodem, port }));
       await storage.setSystemConfig('last_webhook_event_at', new Date().toISOString());
       await storage.setSystemConfig('last_webhook_routed_user', created.userId || 'unassigned');
 
